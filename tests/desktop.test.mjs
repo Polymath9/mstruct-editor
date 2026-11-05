@@ -79,15 +79,18 @@ test("desktop packaging embeds current complete rules and updates the example fo
 
 test("native menus switch entirely between English and Chinese while preserving commands", () => {
   const locale = createDesktopLocale("en"), commands = [];
-  const options = { tr: locale.tr, sendDocumentCommand: command => commands.push(command) };
+  const options = { tr: locale.tr, locale: locale.get(), sendDocumentCommand: command => commands.push(command) };
   const english = applicationMenuTemplate(options);
-  assert.deepEqual(english.map(menu => menu.label), ["File", "Edit", "View", "Settings", "Help"]);
-  assert.doesNotMatch(JSON.stringify(english), /\p{Script=Han}/u);
+  assert.deepEqual(english.map(menu => menu.label), ["File", "Edit", "View", "Settings", "Help", "Language"]);
+  assert.doesNotMatch(JSON.stringify(english.slice(0, -1)), /\p{Script=Han}/u);
+  assert.deepEqual(english.at(-1).submenu.map(item => [item.label, item.checked]), [["中文", false], ["English", true]]);
   english[3].submenu[0].click();
   english[0].submenu[0].click();
   assert.deepEqual(commands, ["application-settings", "new"]);
   locale.set("zh");
-  assert.deepEqual(applicationMenuTemplate(options).map(menu => menu.label), ["文件", "编辑", "视图", "设置", "帮助"]);
+  const chinese = applicationMenuTemplate({ ...options, locale: locale.get() });
+  assert.deepEqual(chinese.map(menu => menu.label), ["文件", "编辑", "视图", "设置", "帮助", "语言"]);
+  assert.deepEqual(chinese.at(-1).submenu.map(item => [item.label, item.checked]), [["中文", true], ["English", false]]);
   assert.equal(locale.tr("applicationSettings"), "软件设置");
   assert.ok(packageJson.build.files.includes("desktop/application-ui.cjs"));
 });
@@ -140,7 +143,7 @@ test("desktop shell exposes only narrow document APIs and keeps the renderer san
   assert.match(mainSource, /setWindowOpenHandler\(\(\) => \(\{ action: "deny" \}\)\)/);
   assert.match(mainSource, /showOpenDialog/);
   assert.match(mainSource, /showSaveDialog/);
-  assert.match(mainSource, /applicationMenuTemplate\(\{ tr: nativeTr, sendDocumentCommand/);
+  assert.match(mainSource, /applicationMenuTemplate\(\{ tr: nativeTr, locale: desktopLocale\.get\(\), sendDocumentCommand/);
   assert.match(mainSource, /async function newDocument\(event\)[\s\S]*confirmDiscard\(nativeTr\("newAction"\)\)[\s\S]*currentDocumentPath = null;[\s\S]*documentDirty = false;/);
   assert.match(mainSource, /ipcMain\.handle\("mstruct:new", newDocument\)/);
   assert.match(mainSource, /setPermissionCheckHandler\(\(\) => false\)/);

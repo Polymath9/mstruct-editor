@@ -440,7 +440,10 @@ test("standalone 语言切换与自由填写的原唱歌手行保持独立运行
 });
 
 test("main 入口只保留装配，并把平台与配置职责交给 runtime 适配层", () => {
-  assert.ok(mainSource.split(/\r?\n/).length < 1050);
+  // Allow the desktop cover adapter's assembly while keeping its implementation outside main.
+  assert.ok(mainSource.split(/\r?\n/).length < 1100);
+  assert.match(mainSource, /import \{ setupDesktopVideoCover \} from "\.\/runtime\/desktop-video-cover\.js"/);
+  assert.doesNotMatch(mainSource, /getContext\("2d"\)|new FontFace\(/);
   assert.match(mainSource, /createDevBrowserDocumentAdapter/);
   assert.match(mainSource, /createDesktopDocumentAdapter/);
   assert.match(mainSource, /createDesktopExportAdapter/);
