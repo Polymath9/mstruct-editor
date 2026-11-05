@@ -1,5 +1,6 @@
 import { durationDisplayWidth } from "./duration-notation.js";
-import { tagDisplayName } from "./tag-config.js";
+import { tagDisplayParts } from "./semantic-tags.js";
+import { transposeNoteName } from "./transposition.js";
 import { normalizeRendererLayers, tagIsVisible } from "./renderer-layers.js";
 import { normalizeRendererScale } from "./renderer-scale.js";
 import { displayChordParts, projectChordDisplayFlow } from "./note-display.js";
@@ -50,14 +51,15 @@ function renderedRomanTargetWidth(target) {
   return base + superscript + Math.max(standardFigures, generalFigures) + applied + breakTail + annotation;
 }
 
-function renderedRomanWidths(event) {
+function renderedRomanWidths(event, preferences) {
+  const tonal = value => transposeNoteName(value, preferences);
   const scale = event.secondary ? .78 : 1;
   if (event.romanLayers?.length === 2) {
     const valueWidth = Math.max(...event.romanLayers.map(renderedRomanTargetWidth)) * scale;
     const openingWidth = event.modulationStart
       ? Math.max(
-        glyphWidth(`${event.modulationStart.previousTonalCenter}(${event.modulationStart.previousRelation}):`, 8),
-        glyphWidth(`${event.modulationStart.targetTonalCenter}(${event.modulationStart.targetRelation}):`, 8),
+        glyphWidth(`${tonal(event.modulationStart.previousTonalCenter)}(${event.modulationStart.previousRelation}):`, 8),
+        glyphWidth(`${tonal(event.modulationStart.targetTonalCenter)}(${event.modulationStart.targetRelation}):`, 8),
       ) + MODULATION_OPENING_DECORATION_WIDTH
       : 0;
     const closingWidth = event.modulationEnd ? 18 : 0;
@@ -65,13 +67,13 @@ function renderedRomanWidths(event) {
   }
   const valueWidth = renderedRomanTargetWidth(event) * scale;
   const prefixWidth = event.hardModulationPrefix
-    ? glyphWidth(`${event.hardModulationPrefix.targetTonalCenter}(${event.hardModulationPrefix.targetRelation}):`, 8) + 6
-    : event.tonalPrefix ? glyphWidth(`${event.tonalPrefix}:`, 8) + 6 : 0;
+    ? glyphWidth(`${tonal(event.hardModulationPrefix.targetTonalCenter)}(${event.hardModulationPrefix.targetRelation}):`, 8) + 6
+    : event.tonalPrefix ? glyphWidth(`${tonal(event.tonalPrefix)}:`, 8) + 6 : 0;
   return { core: valueWidth, left: prefixWidth, right: 0 };
 }
 
 function renderedChordWidth(event, preferences) {
-  const text = (result, fallback) => result && (preferences?.chordDegrees || hasChordQualityOverrides(preferences))
+  const text = (result, fallback) => result && (preferences?.chordDegrees || preferences?.transposeInterval && preferences.transposeInterval !== "none" || hasChordQualityOverrides(preferences))
     ? displayChordParts(result, "normal", preferences, event.chordDisplayTonalCenter).map((part) => part.text).join("") : fallback;
   const main = glyphWidth(text(event.chordResult, event.chord), 16);
   // An annotation uses the same chord font as the main symbol. Its parentheses
@@ -80,8 +82,8 @@ function renderedChordWidth(event, preferences) {
   return (main + annotation) * (event.secondary ? .78 : 1);
 }
 
-function renderedTagWidth(tag, locale) {
-  const label = tagDisplayName(tag, locale);
+function renderedTagWidth(tag, locale, preferences) {
+  const label = tagDisplayParts(tag, locale).map(part => part.type === "note" ? transposeNoteName(part.value, preferences) : part.value).join("");
   const textWidth = [...label].reduce((width, character) => width + (character.codePointAt(0) > 127 ? 14 : 8), 0);
   return textWidth + 24;
 }
@@ -112,7 +114,7 @@ function slotContentWidths(slot, durationDisplayMode, locale, layers, preference
     ? chordEvents.reduce((width, event) => width + renderedChordWidth(event, preferences), 0) + (chordEvents.length - 1) * 12
     : 0;
   const chordWidth = chordVisualWidth ? chordVisualWidth + 28 : 0;
-  const romanWidths = romanEvents.map(renderedRomanWidths);
+  const romanWidths = romanEvents.map(event => renderedRomanWidths(event, preferences));
   const romanVisualWidth = romanWidths.length
     ? romanWidths.reduce((width, event) => width + event.core, 0) + (romanWidths.length - 1) * 12
     : 0;
@@ -125,7 +127,7 @@ function slotContentWidths(slot, durationDisplayMode, locale, layers, preference
   const formWidth = layers.form ? renderedFormWidth(slot.annotations.form) : 0;
   const tagWidth = Math.max(0, ...(slot.tags ?? [])
     .filter((tag) => tagIsVisible(tag, layers) && ["start", "oneshot", "detached-end"].includes(tag.kind))
-    .map((tag) => renderedTagWidth(tag, locale)));
+    .map((tag) => renderedTagWidth(tag, locale, preferences)));
   const durationWidth = (slot.events.some((event) => event.chord || event.symbol)
     || (slot.tags ?? []).some((tag) => tagIsVisible(tag, layers))
     || (layers.comments && (slot.comments?.length ?? 0) > 0))
@@ -135,7 +137,7 @@ function slotContentWidths(slot, durationDisplayMode, locale, layers, preference
   return {
     core,
     chordVisualWidth,
-    chordPrefixWidth: Math.max(0, ...chordEvents.map((event) => event.chordDegreePrefix ? glyphWidth(`${event.chordDegreePrefix}:`, 8) + 6 : 0)),
+    chordPrefixWidth: Math.max(0, ...chordEvents.map((event) => event.chordDegreePrefix ? glyphWidth(`${transposeNoteName(event.chordDegreePrefix, preferences)}:`, 8) + 6 : 0)),
     romanVisualWidth,
     leftPrefixWidth: Math.max(0, ...romanWidths.map((event) => event.left)),
     rightPrefixWidth: Math.max(0, ...romanWidths.map((event) => event.right)),

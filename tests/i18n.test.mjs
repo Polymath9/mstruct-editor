@@ -33,6 +33,7 @@ test("every editor catalog has matching Chinese and English keys", () => {
     for (const key of Object.keys(catalog.en)) {
       const parameters = (copy) => [...new Set([...copy.matchAll(/\{([a-z][a-z0-9]*)\}/g)].map((match) => match[1]))].sort();
       assert.deepEqual(parameters(catalog.zh[key]), parameters(catalog.en[key]), key);
+      assert.doesNotMatch(catalog.zh[key], /Roman/, key);
       if (key !== "languageChinese") assert.doesNotMatch(catalog.en[key], /\p{Unified_Ideograph}/u, key);
     }
   }

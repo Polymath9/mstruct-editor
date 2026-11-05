@@ -7,6 +7,7 @@ import { chordSymbolModel, romanSymbolModel } from "../core/symbol-render-model.
 import { symbolModelDom } from "./symbol-dom.js";
 import { displayNoteName, chordEventTonalCenter } from "../core/note-display.js";
 import { tr as defaultTr } from "../editor-i18n.js";
+import { transposeNoteName, transposeMidiNotes } from "../core/transposition.js";
 
 export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopoverDocument, pianoOptions = {}, chordPopover, chordPopoverSymbol, chordPopoverIntervals, chordPopoverNoteNames, chordPopoverStaff, chordPopoverStaffError, chordPopoverAudioError, chordPopoverPlay, chordPopoverPlayLabel, romanPopover, romanPopoverSymbol, romanPopoverStructure, tr = defaultTr }) {
   const musicAccidentals = new Set(["♭", "♯", "𝄫", "𝄪"]);
@@ -15,8 +16,10 @@ export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopo
   let chordStaffGeneration = 0;
   let currentRomanPopover = null;
 
-  function appendChordNotation(parent, text) {
-    for (const token of displayNoteName(text, getChordPreferences()).split(/([♭♯𝄫𝄪])/u).filter(Boolean)) {
+  function appendChordNotation(parent, text, alreadyTransposed = false) {
+    const preferences = { ...getChordPreferences() };
+    if (alreadyTransposed) preferences.transposeInterval = "none";
+    for (const token of displayNoteName(text, preferences).split(/([♭♯𝄫𝄪])/u).filter(Boolean)) {
       parent.append(musicAccidentals.has(token) ? makeElement("span", "score-chord-accidental", token) : document.createTextNode(token));
     }
   }
@@ -122,16 +125,18 @@ export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopo
     currentChordPopover?.target?.setAttribute("aria-expanded", "false");
     const noteNameSpecials = getChordPreferences().sharp9AsFlat10 ? ["sharp9_as_flat10"] : [];
     if (noteNameSpecial) noteNameSpecials.push(noteNameSpecial);
-    const noteNames = result.structure.toNoteNames(noteNameSpecials);
-    const midiNotes = result.structure.toMidiNotes();
-    currentChordPopover = { result, target, noteNames, midiNotes };
+    const preferences = getChordPreferences();
+    const noteNames = result.structure.toNoteNames(noteNameSpecials).map(note => transposeNoteName(note, preferences));
+    const midiNotes = transposeMidiNotes(result.structure.toMidiNotes(), preferences);
+    const audioMidiNotes = transposeMidiNotes(result.structure.toMidiNotes(), preferences, { audio: true });
+    currentChordPopover = { result, target, noteNames, midiNotes, audioMidiNotes };
     target.setAttribute("aria-expanded", "true");
     chordPopoverSymbol.replaceChildren(makeChordSymbol(result, center));
     chordPopoverIntervals.textContent = `[${result.structure.values.map(toMusicGlyphs).join(", ")}]`;
     chordPopoverNoteNames.replaceChildren(document.createTextNode("["));
     noteNames.forEach((note, index) => {
       if (index) chordPopoverNoteNames.append(document.createTextNode(", "));
-      appendChordNotation(chordPopoverNoteNames, note);
+      appendChordNotation(chordPopoverNoteNames, note, true);
     });
     chordPopoverNoteNames.append(document.createTextNode("]"));
     chordPopoverStaff.setAttribute("aria-label", tr("chordStaffAria", { notes: noteNames.map(toMusicGlyphs).join(", ") }));
@@ -167,8 +172,9 @@ export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopo
     valueElement.setAttribute("aria-haspopup", "dialog");
     valueElement.setAttribute("aria-controls", chordPopover.id);
     valueElement.setAttribute("aria-expanded", "false");
-    valueElement.setAttribute("aria-label", tr("chordDetailsAria", { chord: target.chord }));
-    valueElement.append(makeChordSymbol(target.chordResult, center));
+    const symbol = makeChordSymbol(target.chordResult, center);
+    valueElement.setAttribute("aria-label", tr("chordDetailsAria", { chord: symbol.getAttribute("aria-label") }));
+    valueElement.append(symbol);
     if (getChordPreferences().chordDegrees && center) valueElement.dataset.chordDegreeCenter = center;
     valueElement.addEventListener("click", () => openChordPopover(target.chordResult, valueElement, noteNameSpecial, center));
     return valueElement;

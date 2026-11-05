@@ -1,10 +1,30 @@
 import { setupRendererSettings } from "./renderer-settings.js";
-import { RENDERER_PREFERENCES_STORAGE_KEY } from "../core/renderer-preferences.js";
+import { normalizeRendererPreferences, RENDERER_PREFERENCES_STORAGE_KEY } from "../core/renderer-preferences.js";
+import { normalizeTransposition } from "../core/transposition.js";
 import { DEFAULT_RENDERER_SCALE, SCORE_BASE_FONT_SIZE, normalizeRendererScale,
   getRendererScaleSnapshot, writeRendererScale, subscribeRendererScale } from "../core/renderer-scale.js";
 
+export function readStandaloneChordPreferences() {
+  try { return normalizeRendererPreferences(JSON.parse(window.localStorage.getItem(RENDERER_PREFERENCES_STORAGE_KEY) ?? "null")); }
+  catch { return normalizeRendererPreferences(null); }
+}
+
+/** Transposition belongs to the open document session, independent of saved preferences. */
+export function createRendererTransposition({ getPreferences, postToHost, refresh }) {
+  let value = normalizeTransposition();
+  return {
+    get: () => value,
+    getPreferences: () => ({ ...getPreferences(), ...value }),
+    set(next, { refresh: shouldRefresh = true } = {}) {
+      value = normalizeTransposition(next);
+      postToHost("transposition-state", { transposition: value });
+      if (shouldRefresh) refresh();
+    },
+  };
+}
+
 /** Display state and settings routing; score/export document state stays outside. */
-export function setupRendererDisplay({ canvas, hostedMode, getPreferences, updatePreferences, refreshLayout, postToHost, tr }) {
+export function setupRendererDisplay({ canvas, hostedMode, getPreferences, updatePreferences, getTransposition, updateTransposition, refreshLayout, postToHost, tr }) {
   let scale = hostedMode ? DEFAULT_RENDERER_SCALE : getRendererScaleSnapshot();
   let presentation = false;
   const effectiveScale = () => presentation ? 125 : scale;
@@ -29,6 +49,7 @@ export function setupRendererDisplay({ canvas, hostedMode, getPreferences, updat
   });
   resizeObserver.observe(canvas);
   setupRendererSettings({
+    getTransposition, updateTransposition,
     getScale: effectiveScale,
     canScale: () => !presentation,
     updateScale: (next) => {

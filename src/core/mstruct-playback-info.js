@@ -1,5 +1,6 @@
 import { commentText } from "./mstruct-comments.js";
 import { referenceBpmValue } from "./mstruct-tempo.js";
+import { transposeNoteName, transposeMidiNotes } from "./transposition.js";
 
 function currentTags(source, formTags, dtcTag, globalTags = []) {
   const byKey = new Map();
@@ -39,6 +40,7 @@ export function playbackEntryInformation(entry, {
   comments = [],
   locale = "zh",
   sharp9AsFlat10 = true,
+  ...preferences
 } = {}) {
   const source = entry?.source ?? null;
   const chordEvent = Object.hasOwn(entry ?? {}, "resolvedChordEvent")
@@ -46,8 +48,8 @@ export function playbackEntryInformation(entry, {
     : firstAbsoluteChord(source);
   const noteNameSpecials = sharp9AsFlat10 ? ["sharp9_as_flat10"] : [];
   if (chordEvent?.chordNoteNameSpecial) noteNameSpecials.push(chordEvent.chordNoteNameSpecial);
-  const noteNames = chordEvent ? chordEvent.chordResult.structure.toNoteNames(noteNameSpecials) : [];
-  const midiNotes = chordEvent ? chordEvent.chordResult.structure.toMidiNotes() : [];
+  const noteNames = chordEvent ? chordEvent.chordResult.structure.toNoteNames(noteNameSpecials).map(note => transposeNoteName(note, preferences)) : [];
+  const midiNotes = chordEvent ? transposeMidiNotes(chordEvent.chordResult.structure.toMidiNotes(), preferences) : [];
   const commentNumber = currentCommentNumber(source);
   return {
     bpm: entry?.bpm ?? null,

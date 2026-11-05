@@ -13,6 +13,8 @@ import { layoutSystems } from "../src/core/engraving.js";
 import { normalizeRendererPreferences } from "../src/core/renderer-preferences.js";
 import { chordSymbolModel } from "../src/core/symbol-render-model.js";
 import { displayChordParts, displayNoteName, noteDegree, projectChordDisplayFlow } from "../src/core/note-display.js";
+import { TRANSPOSE_INTERVALS, normalizeTransposition, transposeNoteName, transposeMidiNotes, pianoKeyMidi, pianoKeyboardRange } from "../src/core/transposition.js";
+import { chordNotesForStaff } from "../src/core/chord-staff.js";
 
 const csv = (name) => readFile(new URL(`../src/config/${name}.csv`, import.meta.url), "utf8");
 const [chords, basicCsv, advancedCsv, figuredBassCsv, specialCsv] = await Promise.all([
@@ -22,6 +24,31 @@ const options = { specialChords: parseSpecialChordCsv(chords), romanConfig: pars
 const [cadenceCsv, tonalCsv, sequenceCsv] = await Promise.all([csv("cadence-tags"), csv("tonal-tags"), csv("sequence-tags")]);
 options.semanticTagConfig = parseSemanticTagConfigCsv({ cadenceCsv, tonalCsv, sequenceCsv }, options);
 const prefs = { chordDegrees: true };
+
+test("transposition preserves interval spelling, staff octaves and separate audio mapping", () => {
+  const down = { transposeDirection: "down", transposeInterval: "m2" };
+  assert.equal(transposeNoteName("C", down), "B");
+  assert.deepEqual(transposeMidiNotes([60], down), [59]);
+  assert.deepEqual(transposeMidiNotes([60], down, { audio: true }), [60]);
+  assert.equal(pianoKeyMidi(59, down), 60);
+  assert.equal(pianoKeyMidi(59, { ...down, pianoFollowsTranspose: true }), 59);
+  assert.equal(transposeNoteName("C", { transposeInterval: "A1" }), "C#");
+  assert.equal(transposeNoteName("C", { transposeInterval: "m2" }), "Db");
+  assert.equal(transposeNoteName("C", { transposeInterval: "d2" }), "Dbb");
+  assert.equal(transposeNoteName("Cx", { transposeInterval: "A1" }), "D#");
+  assert.equal(transposeNoteName('"c"', down), '"b"');
+  for (const transposeDirection of ["up", "down"]) for (const interval of TRANSPOSE_INTERVALS) {
+    const settings = { transposeDirection, transposeInterval: interval.id };
+    for (const note of ["C", "C#", "Dbb", "Ex", "Fb", "G", "A", "B#"]) {
+      const pitch = tonalReferencePitchClass(note);
+      const midi = transposeMidiNotes([60 + pitch], settings);
+      const names = [transposeNoteName(note, settings)];
+      assert.equal(chordNotesForStaff(names, midi)[0].midi, midi[0]);
+    }
+  }
+  assert.deepEqual(normalizeTransposition({ transposeInterval: "bad" }), { transposeDirection: "up", transposeInterval: "none", pianoFollowsTranspose: false });
+  assert.deepEqual(pianoKeyboardRange([8, 116, -3, 140]), { low: 0, high: 119 });
+});
 const flatten = (node) => typeof node === "string" ? node : node.children.map(flatten).join("");
 const nodes = (node) => typeof node === "string" ? [] : [node, ...node.children.flatMap(nodes)];
 const chord = (source, preferences, center, mode = "camel") => chordSymbolModel(parseChordSymbol(source, options), mode, preferences, center);

@@ -12,6 +12,34 @@ import {
 } from "../src/core/mstruct-playback.js";
 import { playbackEntryInformation } from "../src/core/mstruct-playback-info.js";
 import { createRendererPlayback } from "../src/ui/renderer-playback.js";
+import { ChordPianoPlayer } from "../src/core/chord-audio.js";
+
+test("manual piano voices coexist with preview voices and pending notes respect cancellation", async () => {
+  const player = new ChordPianoPlayer();
+  const started = [], stopped = [];
+  player.context = { currentTime: 0, close() {} };
+  player.piano = { start(options) { started.push(options); return () => stopped.push(options.note); }, dispose() {} };
+  player.load = async () => {};
+  const release = await player.noteOn(60);
+  await player.play([64]);
+  player.stop();
+  assert.deepEqual(stopped, [64]);
+  release(); release();
+  assert.deepEqual(stopped, [64, 60]);
+  assert.equal(started[0].duration, undefined);
+  let finish;
+  player.load = () => new Promise(resolve => { finish = resolve; });
+  let cancelled = false;
+  const pendingManual = player.noteOn(67, () => cancelled);
+  cancelled = true; finish(); await pendingManual;
+  assert.equal(started.length, 2);
+  const pendingPreview = player.play([69]);
+  player.stop(); finish(); await pendingPreview;
+  assert.equal(started.length, 2);
+  const disposedManual = player.noteOn(72);
+  player.dispose(); finish(); await disposedManual;
+  assert.equal(started.length, 2);
+});
 
 test("injected desktop video follows the existing playback clock, volume and source lifecycle", async t => {
   class Media extends EventTarget {

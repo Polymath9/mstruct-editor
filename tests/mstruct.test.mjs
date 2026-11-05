@@ -107,9 +107,9 @@ test("K545 文档是独立编辑器的有效启动测试用例", () => {
   assert.equal(result.ok, true, result.errors.map((error) => error.message).join("\n"));
   assert.ok(result.measures.length >= 13);
   const measure11 = result.measures.find((measure) => measure.barNumber === 11);
-  assert.deepEqual(measure11?.slots[1].events[0].romanLayers.map((layer) => layer.roman), ["[6,4-]", "I64"]);
+  assert.deepEqual(measure11?.slots[1].events[0].romanLayers.map((layer) => layer.roman), ["[6,4-]", "IV64"]);
   assert.deepEqual(measure11?.slots[0].events[0].romanLayers.map((layer) => [layer.romanResult.baseText, layer.romanFigureChain?.index]), [["V", 0], ["I", undefined]]);
-  assert.deepEqual(measure11?.slots[1].events[0].romanLayers.map((layer) => [layer.romanResult.baseText, layer.romanFigureChain?.index]), [["", 1], ["I", undefined]]);
+  assert.deepEqual(measure11?.slots[1].events[0].romanLayers.map((layer) => [layer.romanResult.baseText, layer.romanFigureChain?.index]), [["", 1], ["IV", undefined]]);
 });
 
 test("NR 回归覆盖同小节、跨小节、延长符来源和强制跨 system", () => {

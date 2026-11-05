@@ -5,12 +5,108 @@ import { normalizeRendererPreferences } from "../src/core/renderer-preferences.j
 import { normalizeRendererLayers, readRendererLayers, writeRendererLayers } from "../src/core/renderer-layers.js";
 import { renderFullscreenBpm } from "../src/ui/renderer-fullscreen.js";
 import { createSourceEditor } from "../src/ui/source-editor.js";
+import { createEditorLineNumbering } from "../src/ui/editor-line-numbering.js";
 import { createEditorWarningSettings } from "../src/ui/editor-warning-settings.js";
 import { createEditorStartupSettings } from "../src/ui/editor-startup-settings.js";
 import { snapScoreBarline, alignScoreBarlines } from "../src/ui/score-barlines.js";
 import { createScoreRenderer } from "../src/ui/score-renderer.js";
 import { createScoreFeedback } from "../src/ui/score-feedback.js";
+import { createRendererPianoKeyboard, pianoKeyboardOverlaps, pianoKeyboardScrollTarget } from "../src/ui/renderer-piano-keyboard.js";
 import { presentationStripGeometry, presentationScrollGeometry, presentationHeightRanges, joinPresentationBoundaries, presentationContentBounds } from "../src/ui/renderer-scroll-strip.js";
+
+test("source numbering shares measure labels, continuation blanks and cumulative bar numbers", () => {
+  const source = "{BN:1}C\nG\n\n{BN:5}F\n";
+  const sourceInput = { value: source, scrollTop: 17 };
+  const lineGutter = {};
+  const settings = { lineNumberMode: "measure", autoWrap: false };
+  const editor = createSourceEditor({ sourceInput, lineGutter, getEditorSettings: () => settings });
+  const result = { measures: [
+    { barNumber: 1, slots: [{ events: [{ start: 0 }, { start: source.indexOf("G") }] }] },
+    { barNumber: 5, displayBarNumber: 17, slots: [{ events: [{ start: source.indexOf("{BN:5}") }] }] },
+  ] };
+  assert.deepEqual(editor.updateLineGutter(source.split("\n"), result), ["1", " ", "", "17", ""]);
+  assert.equal(lineGutter.scrollTop, 17);
+  settings.lineNumberMode = "line";
+  assert.deepEqual(editor.updateLineGutter(source.split("\n"), result), ["1", "2", "3", "4", "5"]);
+});
+
+test("editor numbering defaults to measures, persists the choice and follows other same-origin pages", () => {
+  const values = new Map();
+  const storage = { getItem: key => values.get(key), setItem: (key, value) => values.set(key, value) };
+  const button = Object.assign(new EventTarget(), { setAttribute() {} });
+  const control = { classList: { toggle() {} } };
+  const view = new EventTarget();
+  let changes = 0;
+  const numbering = createEditorLineNumbering({ button, control, storage, view, onChange: () => changes++ });
+  assert.equal(numbering.mode, "measure");
+  button.dispatchEvent(new Event("click"));
+  assert.equal(numbering.mode, "line");
+  const reloaded = createEditorLineNumbering({ button: Object.assign(new EventTarget(), { setAttribute() {} }), control, storage, view, onChange() {} });
+  assert.equal(reloaded.mode, "line");
+  const key = [...values.keys()][0];
+  values.set(key, "measure");
+  view.dispatchEvent(Object.assign(new Event("storage"), { key }));
+  assert.equal(numbering.mode, "measure");
+  assert.equal(reloaded.mode, "measure");
+  values.set(key, "invalid");
+  view.dispatchEvent(Object.assign(new Event("storage"), { key }));
+  assert.equal(numbering.mode, "measure");
+  numbering.destroy();
+  reloaded.destroy();
+  button.dispatchEvent(new Event("click"));
+  assert.equal(changes, 3);
+  const blocked = createEditorLineNumbering({ button, control, view, storage: {
+    getItem() { throw Error("blocked"); }, setItem() { throw Error("blocked"); },
+  }, onChange() {} });
+  assert.equal(blocked.mode, "measure");
+  button.dispatchEvent(new Event("click"));
+  assert.equal(blocked.mode, "line");
+  blocked.destroy();
+});
+
+test("piano obstruction uses the highlighted rectangle and scrolls the system or a tall system's event", () => {
+  const keyboard = { left: 10, right: 790, top: 600, bottom: 700 };
+  const system = { left: 0, right: 800, top: 480, bottom: 700, height: 220 };
+  const clear = { left: 80, right: 150, top: 500, bottom: 590, height: 90 };
+  const blocked = { ...clear, top: 580, bottom: 630, height: 50 };
+  assert.equal(pianoKeyboardScrollTarget(clear, system, keyboard, 80), null);
+  assert.equal(pianoKeyboardScrollTarget(blocked, system, keyboard, 80), system);
+  assert.equal(pianoKeyboardScrollTarget(blocked, { ...system, height: 620 }, keyboard, 80), blocked);
+  assert.equal(pianoKeyboardOverlaps({ ...blocked, left: 800, right: 900 }, keyboard), false);
+  assert.equal(pianoKeyboardOverlaps({ ...clear, bottom: 600 }, keyboard), false);
+});
+
+test("piano layer preloads on enable and reserves space only while available and enabled", async t => {
+  const previous = new Map(["window", "document", "ResizeObserver"].map(key => [key, globalThis[key]]));
+  t.after(() => { for (const [key, value] of previous) { if (value === undefined) delete globalThis[key]; else globalThis[key] = value; } });
+  function node() {
+    const classes = new Set();
+    return { ...fakeDomNode(null), dataset: {}, offsetHeight: 94,
+      classList: { contains: key => classes.has(key), remove: key => classes.delete(key),
+        toggle(key, enabled) { if (enabled) classes.add(key); else classes.delete(key); } },
+      style: { setProperty() {}, removeProperty() {} }, setAttribute() {}, addEventListener() {}, remove() {},
+      querySelector: () => null, getBoundingClientRect: () => ({ left: 0, right: 800, top: 0, bottom: 700 }),
+    };
+  }
+  globalThis.document = { createElement: node, body: node() };
+  globalThis.window = { innerHeight: 700, innerWidth: 800, addEventListener() {}, removeEventListener() {} };
+  globalThis.ResizeObserver = class { observe() {} disconnect() {} };
+  let enabled = false, loads = 0, finish;
+  const canvas = node(), nav = node();
+  nav.getBoundingClientRect = () => ({ bottom: 40 });
+  const keyboard = createRendererPianoKeyboard({ panel: node(), canvas, nav, tr: key => key,
+    player: { load(options) { assert.equal(options.resume, false); loads += 1; return new Promise(resolve => { finish = resolve; }); } },
+    getPreferences: () => ({}), getLayers: () => ({ pianoKeyboard: enabled }), requestScroll() {}, isHostedViewer: false });
+  keyboard.refresh(); assert.equal(loads, 0);
+  enabled = true; keyboard.refresh(); keyboard.refresh();
+  assert.equal(loads, 1); assert.equal(canvas.classList.contains("renderer-has-piano-space"), true);
+  finish(); await Promise.resolve(); await Promise.resolve(); assert.equal(loads, 1);
+  enabled = false; keyboard.refresh(); assert.equal(canvas.classList.contains("renderer-has-piano-space"), false);
+  enabled = true; canvas.dataset.fixedScale = "true"; keyboard.refresh(); assert.equal(loads, 1);
+  canvas.dataset.fixedScale = "false"; keyboard.refresh(); assert.equal(loads, 2);
+  keyboard.destroy(); finish(); await Promise.resolve();
+  assert.equal(canvas.classList.contains("renderer-has-piano-space"), false);
+});
 
 test("video strip reserves ordinary rows and expands only for the active tall system", () => {
   const settings = { viewportHeight: 1080, maximumLeading: 420, maximumTrailing: 160 };
@@ -282,9 +378,9 @@ test("startup DEMO preference defaults on, survives reopening, and reports faile
 test("渲染图层默认全开并只保存到提供的 session 存储", () => {
   const values = new Map();
   const storage = { getItem: (key) => values.get(key) ?? null, setItem: (key, value) => values.set(key, value) };
-  assert.deepEqual(normalizeRendererLayers(), { speed: true, form: true, tags: true, comments: true, newRiemannian: true });
+  assert.deepEqual(normalizeRendererLayers(), { speed: true, form: true, tags: true, comments: true, newRiemannian: true, pianoKeyboard: false });
   writeRendererLayers({ speed: false, comments: false }, storage);
-  assert.deepEqual(readRendererLayers(storage), { speed: false, form: true, tags: true, comments: false, newRiemannian: true });
+  assert.deepEqual(readRendererLayers(storage), { speed: false, form: true, tags: true, comments: false, newRiemannian: true, pianoKeyboard: false });
   assert.match(navSource, /command === "layers"/);
   assert.match(navSource, /new BroadcastChannel\(RENDERER_LAYERS_CHANNEL\)/);
   assert.match(scoreSource, /layers\.speed/);
@@ -467,7 +563,7 @@ test("播放控制组提供钢琴、本地 BGM、竖向音量与同步状态", (
   assert.match(playbackSource, /URL\.createObjectURL\(file\)/);
   assert.match(playbackSource, /URL\.revokeObjectURL\(bgmUrl\)/);
   assert.match(playbackSource, /await pianoPlayer\.load\(\)/);
-  assert.match(playbackSource, /pianoPlayer\.play\(entry\.midiNotes, \{ durationSeconds: remainingSeconds \}\)/);
+  assert.match(playbackSource, /pianoPlayer\.play\(transposeMidiNotes\(entry\.midiNotes, getPreferences\(\), \{ audio: true \}\), \{ durationSeconds: remainingSeconds \}\)/);
   assert.match(playbackSource, /mode = bgmHasRemaining\(\) \? "bgm-tail" : "paused"/);
   assert.match(playbackSource, /bgmAudio\.addEventListener\("ended", handleBgmEnded\)/);
   assert.match(playbackSource, /bgmAudio\.currentTime \* 1000 - elapsedMs/);
@@ -589,7 +685,7 @@ test("全屏展示复用当前播放 entry，并提供双栏信息面板与注�
   assert.match(fullscreenSource, /postToHost\("fullscreen-exit-request"\)/);
   assert.match(fullscreenSource, /drawChordStaff\(staff, information\.noteNames, information\.midiNotes/);
   assert.match(fullscreenSource, /renderFullscreenBpm\(bpm, information, makeBpmLabel\)/);
-  assert.match(fullscreenSource, /appendChordNotation\(noteNames, name\)/);
+  assert.match(fullscreenSource, /appendChordNotation\(noteNames, name, true\)/);
   assert.match(fullscreenSource, /openChordPopover\(/);
   assert.match(fullscreenSource, /querySelectorAll\(lineSelector\)[\s\S]*find\(\(candidate\) => candidate\.querySelector\(valueSelector\)\)/);
   assert.match(fullscreenSource, /while \(size > 12 && comment\.scrollHeight > available \+ 1\)/);
@@ -616,7 +712,7 @@ test("全屏展示复用当前播放 entry，并提供双栏信息面板与注�
   assert.match(playbackSource, /refreshRenderedScore\(\)\s*\{[\s\S]*updateActive\(\);[\s\S]*emit\(\)/);
   assert.match(fullscreenSource, /canvas\.classList\.add\("is-scrollbar-active"\)/);
   assert.match(navSource, /const scrollTarget = element\.closest\("\.score-system"\) \?\? element/);
-  assert.match(navSource, /const rect = scrollTarget\.getBoundingClientRect\(\)/);
+  assert.match(navSource, /const rect = obstruction\?\.target \?\? scrollTarget\.getBoundingClientRect\(\)/);
   assert.match(navSource, /const nextTop = rendererCanvas\.scrollTop \+ rect\.top - visibleTop/);
   assert.doesNotMatch(navSource, /availableHeight - rect\.height/);
   assert.match(stylesheet, /grid-template-columns:\s*minmax\(0, 2fr\) minmax\(320px, 1fr\)/);
@@ -689,7 +785,7 @@ test("乐谱和弦使用共享编译结果、渲染偏好与可交互详情弹�
   assert.match(rendererSource, /valueElement\.addEventListener\("click", \(\) => openChordPopover/);
   assert.match(rendererSource, /result\.structure\.toNoteNames\(noteNameSpecials\)/);
   assert.match(rendererSource, /drawChordStaff\(chordPopoverStaff/);
-  assert.match(rendererSource, /chordPianoPlayer\.play\(current\.midiNotes\)/);
+  assert.match(rendererSource, /chordPianoPlayer\.play\(current\.audioMidiNotes\)/);
   assert.match(editorHtml, /id="chordPopover"/);
   assert.match(editorHtml, /id="chordPopoverIntervals"/);
   assert.match(editorHtml, /id="chordPopoverNoteNames"/);
@@ -715,7 +811,7 @@ test("乐谱和弦使用共享编译结果、渲染偏好与可交互详情弹�
   assert.match(durationStylesheet, /font-family:\s*"Bravura";[\s\S]*Bravura\.woff2/);
   assert.match(staffSource, /targetDocument\.fonts\.add\(fontFace\)/);
   assert.match(audioSource, /export class ChordPianoPlayer/);
-  assert.match(audioSource, /async load\(\)/);
+  assert.match(audioSource, /async load\(/);
   assert.match(audioSource, /stop\(\)/);
 });
 

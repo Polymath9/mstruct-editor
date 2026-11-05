@@ -1,5 +1,6 @@
 import { renderChordParts, toMusicGlyphs } from "./chord-symbol.js";
 import { parseTonalReference, tonalReferencePitchClass } from "./tonal-reference.js";
+import { transposeNoteName } from "./transposition.js";
 
 const LETTERS = "CDEFGAB";
 const MAJOR_STEPS = [0, 2, 4, 5, 7, 9, 11];
@@ -7,14 +8,14 @@ const mod = (value, base) => (value % base + base) % base;
 
 /** Display-only ordering; interval and quality text must never pass through here. */
 export function displayNoteName(value, preferences = {}) {
-  const glyphs = toMusicGlyphs(value, { noteName: true });
+  const glyphs = toMusicGlyphs(transposeNoteName(value, preferences), { noteName: true });
   return preferences.accidentalBeforeNote
     ? glyphs.replace(/([A-Ga-g])([♭♯𝄫𝄪])/gu, "$2$1")
     : glyphs;
 }
 
 export function noteDegree(note, center, minorTonicSix = false) {
-  const reference = parseTonalReference(center);
+  const reference = parseTonalReference(center, { extendedAccidentals: true });
   const pitch = tonalReferencePitchClass(note);
   if (!reference || pitch === null) return null;
   let tonicLetter = LETTERS.indexOf(reference.note[0].toUpperCase());
@@ -36,9 +37,11 @@ export function displayChordParts(result, mode, preferences = {}, center = null)
     if (["root-accidental", "bass-accidental"].includes(part.role)) return [];
     if (!["root", "bass"].includes(part.role)) return [part];
     const next = parts[index + 1];
-    const accidental = next?.role === `${part.role}-accidental` ? next : null;
-    const degree = preferences.chordDegrees ? noteDegree(part.text + (accidental?.text ?? ""), center, preferences.minorTonicSix) : null;
-    const name = { ...part, text: degree?.number ?? part.text };
+    const originalAccidental = next?.role === `${part.role}-accidental` ? next : null;
+    const transposed = transposeNoteName(part.text + (originalAccidental?.text ?? ""), preferences);
+    const accidental = transposed.slice(1) ? { ...part, role: `${part.role}-accidental`, text: transposed.slice(1), notation: true } : null;
+    const degree = preferences.chordDegrees ? noteDegree(transposed, transposeNoteName(center, preferences), preferences.minorTonicSix) : null;
+    const name = { ...part, text: degree?.number ?? transposed[0] };
     const mark = degree
       ? degree.accidental && { ...part, role: `${part.role}-accidental`, text: degree.accidental, notation: true }
       : accidental;

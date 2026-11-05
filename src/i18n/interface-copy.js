@@ -1,5 +1,9 @@
 export const interfaceCopy = {
   zh: {
+    romanBassValidation: "罗马数字校验", rendererLayerPianoKeyboard: "钢琴键盘",
+    settingsTranspose: "移调", settingsTransposeDirection: "移调方向", settingsTransposeInterval: "移调音程",
+    settingsTransposeUp: "向上", settingsTransposeDown: "向下", settingsPianoFollowsTranspose: "钢琴预览声音跟随移调",
+    pianoKeyboardRangeError: "部分音符超出钢琴可用音域。", pianoKeyboardAudioError: "钢琴音色加载失败，请重试。",
     videoExportConfirm: "确认",
     videoExportFrameRate: "帧率", videoExportFps: "{fps} 帧/秒",
     videoExportTitle: "导出 MP4 视频", videoExportDescription: "1920 × 1080。使用所选全屏模式，从头播放并导出，使用当前媒体、音量与自动钢琴开关。视频模式包含 MP4 画面，成品隐藏导航栏。",
@@ -7,7 +11,7 @@ export const interfaceCopy = {
     videoExportStart: "选择位置并导出", videoCancelExport: "取消导出", videoPreparing: "正在准备视频…", videoRenderingAudio: "正在生成钢琴音轨… {percent}%", videoRenderingFrames: "正在生成视频画面… {percent}%", videoEncoding: "正在完成 MP4 文件…",
     videoExportCancelled: "已取消导出。", videoExportComplete: "视频已保存：{path}", videoExportFailed: "视频导出失败。", videoPlaybackUnavailable: "请先修复语法错误，并准备可播放的速度或时间轴。", videoTooLong: "视频超过六小时，请缩短播放路线。", videoPianoFailed: "无法加载离线钢琴音色。", videoExportBusy: "已有视频正在导出。", videoEncoderFailed: "视频编码器无法完成导出。",
     openDemoOnStartup: "启动时打开 DEMO 文件",
-    romanWarnings: "Roman 分析建议",
+    romanWarnings: "罗马数字分析建议",
     applicationSettings: "软件设置", closeApplicationSettings: "关闭软件设置", applicationColorScheme: "切换软件配色",
     applicationUserSettings: "用户设置（仅本机）", applicationPlaybackHelp: "全局延迟应用到所有谱面与时间轴预览，默认 -30 毫秒，自动保存在本机。",
     applicationAdvanced: "高级选项",
@@ -62,6 +66,10 @@ export const interfaceCopy = {
     invalidLength: "请输入 M:SS、MM:SS、H:MM:SS 或 HH:MM:SS。", pairedLinks: "附加链接需要同时填写网站名称和链接。", measure: "第 {count} 小节", continued: "（续）", elidedMeasures: "省略的小节", scoreSystem: "乐谱行", syntaxErrorTitle: "语法错误", renderFailed: "脚本无法渲染", line: "第 {count} 行", errors: "发现 {count} 个语法错误", incomplete: "没有可显示的乐谱内容。", syntaxValid: "已通过语法与节拍校验", submitting: "正在提交分析…", saving: "正在保存草稿…", complete: "已完成。", actionFailed: "操作失败。", exported: "已导出 .mstruct 文件", fileReadFailed: "无法读取所选文件", fileInvalid: "文件格式无效", mainImported: "已导入主体脚本", imported: "已导入 {name}：曲目信息与主体脚本均已更新", chordDetails: "和弦详情", closeChordDetails: "关闭和弦详情", chordDetailsAria: "查看和弦 {chord} 的详情", chordIntervalQuality: "和弦音级成分", chordNoteNames: "和弦音名", chordStaff: "五线谱", chordStaffAria: "钢琴双谱表：{notes}", chordStaffFailed: "无法渲染五线谱。", playChord: "播放和弦", loadingPiano: "正在载入钢琴……", chordAudioFailed: "无法载入钢琴采样，请检查网络后重试。", romanDetails: "罗马数字详情", closeRomanDetails: "关闭罗马数字详情", romanDetailsAria: "查看罗马数字 {roman} 的音级结构", romanStructure: "罗马数字音级结构",
   },
   en: {
+    romanBassValidation: "Roman Numeral Validation", rendererLayerPianoKeyboard: "Piano Keyboard",
+    settingsTranspose: "Transpose", settingsTransposeDirection: "Transposition direction", settingsTransposeInterval: "Transposition interval",
+    settingsTransposeUp: "Up", settingsTransposeDown: "Down", settingsPianoFollowsTranspose: "Piano Preview Follows Transposition",
+    pianoKeyboardRangeError: "Some notes are outside the available piano range.", pianoKeyboardAudioError: "Could not load the piano. Please try again.",
     videoExportConfirm: "OK",
     videoExportFrameRate: "Frame rate", videoExportFps: "{fps} fps",
     videoExportTitle: "Export MP4 Video", videoExportDescription: "1920 × 1080. Export the selected fullscreen mode from the beginning using the current media, volume and piano switch. Video mode includes the MP4 picture. The navigation bar is hidden in the output.",
@@ -198,7 +206,7 @@ Object.assign(interfaceCopy.en, {
 
 Object.assign(interfaceCopy.zh, {
   rendererSearchInput: "输入事件限制条件……",
-  rendererSearchHelp: "完整和弦默认按相同低音与音集匹配；加 --notallowdifferentnotation 按原记法匹配。通配模式按记法匹配。数字低音继承链头Roman；省略标记或 - 不限制结尾，-x 只匹配显式 -x。",
+  rendererSearchHelp: "完整和弦默认按相同低音与音集匹配；加 --notallowdifferentnotation 按原记法匹配。通配模式按记法匹配。数字低音继承链头罗马数字；省略标记或 - 不限制结尾，-x 只匹配显式 -x。",
   rendererSearchPrevious: "上一个匹配项",
   rendererSearchNext: "下一个匹配项",
   rendererSearchClose: "关闭搜索",
@@ -210,10 +218,10 @@ Object.assign(interfaceCopy.zh, {
   rendererSearchErrorTag: "标签条件无效。",
   rendererSearchErrorSetting: "TC、TS、M、MH、MM、BPM 或 NR 条件无效。",
   rendererSearchErrorOr: "OR 必须写成非嵌套的 (A||B)，且每个分支都必须完整有效。",
-  rendererSearchErrorNot: "NOT 须在完整和弦或 Roman 后写成 !(A||B)，每项为完整模式；不能放入 OR 分支或再嵌套。",
+  rendererSearchErrorNot: "NOT 须在完整和弦或罗马数字后写成 !(A||B)，每项为完整模式；不能放入 OR 分支或再嵌套。",
   rendererSearchErrorToken: "查询标记没有闭合。",
-  rendererSearchErrorHarmony: "和弦／Roman 条件必须同时写出竖线两侧。",
-  rendererSearchErrorPattern: "和弦或 Roman 模式不符合当前编译器语法。",
+  rendererSearchErrorHarmony: "和弦／罗马数字条件必须同时写出竖线两侧。",
+  rendererSearchErrorPattern: "和弦或罗马数字模式不符合当前编译器语法。",
   rendererSearchErrorNotes: "和弦音集合须写成根音加 [notes:0,4,7]；数字为严格升序且不重复的 0–11，后面不能再接和弦语素。",
   rendererSearchErrorContinuation: "延长符 - 完全透明，不能作为搜索目标。",
   rendererSearchErrorGeneric: "事件限制条件无效。",

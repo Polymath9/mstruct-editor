@@ -3,6 +3,7 @@ import { makeError } from "./mstruct-diagnostics.js";
 import { parseRomanBasicReference, RomanSyntaxError, parseRomanSymbol } from "./roman-symbol.js";
 import { STANDALONE_EVENT_TYPES, splitAnnotationField, splitTopLevel, trimFieldPart } from "./mstruct-syntax.js";
 import { tonalReferenceMode as tonalMode, tonalReferencePitchClass } from "./tonal-reference.js";
+import { collectRomanValidationWarnings } from "./roman-validation.js";
 
 export function tonalPitchClass(value) {
   return tonalReferencePitchClass(value);
@@ -32,7 +33,7 @@ function reportRomanError(error, value, absoluteStart, source, errors) {
 
 /** Recommendations are separate from errors and never interrupt compilation or playback. */
 export function collectRomanWarnings(measures, source) {
-  const warnings = [];
+  const warnings = collectRomanValidationWarnings(measures, source);
   for (const measure of measures) for (const slot of measure.slots) for (const event of slot.events) {
     for (const target of event.romanLayers ?? [event]) {
       for (const [resultKey, startKey] of [["romanResult", "romanStart"], ["romanAnnotationResult", "romanAnnotationStart"]]) {

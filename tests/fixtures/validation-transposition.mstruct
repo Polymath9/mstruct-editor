@@ -1,0 +1,20 @@
+METADATA:
+{MSTRUCT_FORMAT_VERSION}1
+{MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
+{MSTRUCT_PROFILE_HASH}sha256:4cc19eaa4d4b5f9e0674ee66b048482a2025c996f6c35e71f57d3c768b893881
+{SONG_NAME}罗马数字校验、键盘与移调 / Roman Validation, Keyboard and Transposition
+{VERSION_NAME}Renderer Test
+{IS_STABLE_TEMPO}True
+{OFFSET}0
+END_METADATA
+
+MAIN:
+{BN:1}{TS:4/4}{D:1/2}{BPM:1/4=120}{TC:C}C|I,C/E|I;
+G7|V,G7|V7;{LB}
+G/B|V65,G/B|V6;{LB}
+G7/B|nVII[6,5-x],G7/D|ii[4,3-x];
+G7/F|IV[4,2-x],C|I;{LB}
+{D:1}F#[nf:(0,35)]|#IV;
+{D:1/2}Cdim7|io,C6|I;
+{D:1}C|I{||END};
+END_MAIN

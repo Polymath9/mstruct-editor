@@ -1,5 +1,6 @@
 import { createVideoExportPlan, pianoExportEvents } from "../core/video-export.js";
 import { createPianoExport } from "../core/piano-export.js";
+import { transposeMidiNotes } from "../core/transposition.js";
 
 export function isVideoExportStage() {
   if (window.location.search !== "?video-export") return false;
@@ -25,6 +26,8 @@ export function setupVideoExportStage({ api, prepare, navigation, refreshLayout 
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       navigation().handleCommand("auto-scroll", true);
       model = createVideoExportPlan(result, value.metadata, value.playback, value.fps);
+      model.plan = { ...model.plan, entries: model.plan.entries.map(entry => ({ ...entry,
+        midiNotes: entry.midiNotes ? transposeMidiNotes(entry.midiNotes, value.preferences, { audio: true }) : entry.midiNotes })) };
       await navigation().renderPresentationAt(0);
       return { ...model, plan: undefined, hasPiano: Boolean(value.playback.pianoEnabled && pianoExportEvents(model.plan).length) };
     },

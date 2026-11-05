@@ -1,13 +1,13 @@
 METADATA:
+
 {MSTRUCT_FORMAT_VERSION}1
 {MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
 {MSTRUCT_PROFILE_HASH}sha256:4cc19eaa4d4b5f9e0674ee66b048482a2025c996f6c35e71f57d3c768b893881
 {AUTHORING_APP_VERSION}MStruct Archive/0.1.0
-
 {REPOSTED}FALSE
-{CREATOR}ExampleAuthor
-{EDITORS}ExampleAuthor
-{VERSION_NAME}ExampleAuthor v1
+{CREATOR}Polymath9
+{EDITORS}Polymath9
+{VERSION_NAME}Polymath9 v1
 
 {SONG_NAME}Piano Sonata No.16 in C major, K.545, Mvt. 1
 {SONG_NAME_ROMANIZED}
@@ -35,11 +35,13 @@ METADATA:
 {IS_STABLE_TEMPO}False
 {OFFSET}0
 
+
 {URL_NETEASE}
 {URL_TME}
 {URL_YOUTUBE}
 {URL_BILIBILI}
 {URL_SPOTIFY}
+{URL_APPLE_MUSIC}
 
 {COMMENTS}
 {COMMENTS_END}
@@ -49,17 +51,17 @@ END_METADATA
 MAIN:
 
 {BN:1}{TEMPO:Allegro}{TS:4/4}{1/4}{TC:C}
-</Sonata_Form:E_Sub1>C|I,,,;
+</Sonata_Form></Sonata_Form:E_Sub1>C|I,,,;
 G7/D|V43,,C|I,;
-F/C|I64,,C|I,;
-G/B|V65,,C|I,;
+F/C|IV64,,C|I,;
+G7/B|V65,,C|I,;
 </Sonata_Form:E_Transition>F|IV,,,;
 C/E|I6,,,;
 Dm7|ii7,,,G7/D|V43;
 C|I,,,;
 Dm/F|ii6,,,;
 -,,,{1/8},{M:G|V}D7/F#|V65/V&V65;
-{1/4}G|V[5,3-]&I,C/G|[6,4-]&I64,G|[5,3-]&I,C/G|[6,4-]&I64;
+{1/4}G|V[5,3-]&I,C/G|[6,4-]&IV64,G|[5,3-]&I,C/G|[6,4-]&IV64;
 </HC>G|[5,3]&I,,,</Sonata_Form:E_MC>0;
 N.C.,,,;
 </Sonata_Form:E_Sub2>G/B|V6&I6{/M},,,;
@@ -70,16 +72,16 @@ D7/A|V43,,,;
 F#dim/A|viio6,,Bm|iii,;
 Em/G|vi6,,Am|ii,;
 D/F#|V6,,</Seq>G|I,;
-</Sonata_Form:E_Closing>Am/C|V6,,,;
+Am/C|ii6,,,;
 -,,,;
-</Sonata_Form:E_Codetta>G/D|V[6,4-],,,;
+G/D|V[6,4-],,,;
 D|[5,3],,,;
-G|I,,,D|V;
+</Sonata_Form:E_Closing></Sonata_Form:E_EEC>G|I,,,D|V;
 G|I,,,D|V;
 </PAC>G|I,,,0{:||};
 
-</Sonata_Form:D>{||:}Gm|i,,,D7|V;
-Gm|i,,,D7|V;
+</Sonata_Form:D>{||:}Gm|i,,,D7|V7;
+Gm|i,,,D7|V7;
 {M:d|v}Gm|i&iv,,,;
 A|V/v&V,,,;
 Dm|v&i{/M},,,A7|V7;
@@ -90,11 +92,11 @@ Am|v&i{/M},,Dm|iv,;
 G/B|bVII6,,C|bIII,;
 F/A|bVI6,,Bdim|iio,;
 E/G#|V6,,Am|i,;
-{M:F|bVI}Bb/D|bII6\\IV6/bVI&IV,,C7|V7/bVI&V7,;
+{M:F|bVI}Bb/D|bII6\\IV6/bVI&IV6,,C7|V7/bVI&V7,;
 
 </Sonata_Form:R_Sub1>F|bVI&I{/M},,,;
 C7/G|V43,,F|I,;
-Bb/F|I64,,F|I,;
+Bb/F|IV64,,F|I,;
 C7/E|V65,,F|I,;
 </Sonata_Form:R_Transition>Bb|IV,,,;
 F/A|I6,,,;
@@ -110,7 +112,7 @@ Dm/F|ii6,,,;
 </HC>G|[5,3],,,0;
 
 </Sonata_Form:R_Sub2>N.C.,,,;
-C/E|V6,,,;
+C/E|I6,,,;
 G7/D|V43,,,;
 C/E|I6,,,;
 G7/D|V43,,,;
@@ -118,11 +120,11 @@ G7/D|V43,,,;
 Bdim/D|viio6,,Em|iii,;
 Am/C|vi6,,Dm|ii,;
 G/B|V6,,</Seq>C|I,;
-</Sonata_Form:R_Closing>Dm/F|ii6,,,;
+Dm/F|ii6,,,;
 F#dim7|viio7/V,,,;
 C/G|V[6,4-],,,;
 G|[5,3],,,;
-</Sonata_Form:Coda>C|I,,,G|V;
+</Sonata_Form:R_Closing></Sonata_Form:R_ESC>C|I,,,G|V;
 C|I,,,G|V;
 </PAC>C|I,,,0{:||};
 

@@ -58,9 +58,20 @@ export function createSourceEditor({ sourceInput, highlightLayer, lineWrapMeasur
         else all.push(current);
         return all;
       }, []);
-    const warningRanges = getEditorSettings?.().showRomanWarnings === false ? [] : warnings
+    const settings = getEditorSettings?.() ?? {};
+    const warningRanges = warnings
+      .filter(warning => warning.romanValidation ? settings.validateRomanBass !== false : settings.showRomanWarnings !== false)
       .filter((warning) => !errorRanges.some((error) => warning.start < error.end && warning.end > error.start))
-      .map((warning) => ({ start: warning.start, end: warning.end, hint: formatDiagnostic(warning) }));
+      .map((warning) => ({ start: warning.start, end: warning.end, hint: formatDiagnostic(warning) }))
+      .sort((left, right) => left.start - right.start || right.end - left.end)
+      .reduce((all, range) => {
+        const previous = all.at(-1);
+        if (previous && range.start < previous.end) {
+          previous.end = Math.max(previous.end, range.end);
+          previous.hint += `\n${range.hint}`;
+        } else all.push(range);
+        return all;
+      }, []);
     const ranges = [...errorRanges, ...warningRanges].sort((left, right) => left.start - right.start);
 
     let cursor = 0;
@@ -112,6 +123,7 @@ export function createSourceEditor({ sourceInput, highlightLayer, lineWrapMeasur
       .map((label, index) => `<span style="height:${visualLineCounts[index] * 1.7}em">${label}</span>`)
       .join("");
     lineGutter.scrollTop = sourceInput.scrollTop;
+    return labels;
   }
 
   return { highlightSource, updateLineGutter };

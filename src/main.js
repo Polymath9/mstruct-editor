@@ -31,9 +31,10 @@ import { createScoreFeedback } from "./ui/score-feedback.js";
 import { setupScoreExport } from "./ui/score-export.js";
 import { setupRendererNav } from "./ui/renderer-nav.js";
 import { readRendererLayers, normalizeRendererLayers, writeRendererLayers } from "./core/renderer-layers.js";
-import { setupRendererDisplay } from "./ui/renderer-display.js";
+import { setupRendererDisplay, createRendererTransposition, readStandaloneChordPreferences } from "./ui/renderer-display.js";
 import { createSourceEditor } from "./ui/source-editor.js";
-import { createEditorWarningSettings } from "./ui/editor-warning-settings.js";
+import { createEditorLineNumbering } from "./ui/editor-line-numbering.js";
+import { setupEditorWarningSettings } from "./ui/editor-warning-settings.js";
 import { createEditorStartupSettings } from "./ui/editor-startup-settings.js";
 import { setupRenderOnResize, setupResizableToolbox } from "./ui/resizable-toolbox.js";
 import { createSymbolUi } from "./ui/symbol-ui.js";
@@ -59,7 +60,7 @@ import { setupStandaloneProfileRuntime } from "./runtime/standalone-profile-ui.j
 import { AUTHORING_APP_VERSION } from "./runtime/authoring-version.js";
 import { readProfileIdentity } from "./core/profile-schema.js";
 import { parseSpecialChordCsv } from "./core/chord-symbol.js";
-import { normalizeRendererPreferences, RENDERER_PREFERENCES_STORAGE_KEY } from "./core/renderer-preferences.js";
+import { normalizeRendererPreferences } from "./core/renderer-preferences.js";
 import { parseRomanConfigCsv } from "./core/roman-symbol.js";
 import { parseTagConfigCsv } from "./core/tag-config.js";
 import { parseGlobalTagList, parseSemanticTagConfigCsv } from "./core/semantic-tags.js";
@@ -238,14 +239,6 @@ const hostedPopoverMount = mountHostedPopovers({
 });
 const hostedChordPopoverDocument = hostedPopoverMount?.parentDocument ?? null;
 
-function standaloneChordPreferences() {
-  try {
-    return normalizeRendererPreferences(JSON.parse(window.localStorage.getItem(RENDERER_PREFERENCES_STORAGE_KEY) ?? "null"));
-  } catch {
-    return normalizeRendererPreferences(null);
-  }
-}
-
 const startupSettings = createEditorStartupSettings({
   row: document.querySelector("#startupDemoRow"), button: document.querySelector("#startupDemoButton"),
   control: document.querySelector("#startupDemoControl"), status: document.querySelector("#startupDemoError"), available: !hostedMode,
@@ -259,13 +252,17 @@ let comments = normalizeComments(startupDocument.comments);
 let commentDialogUi = null;
 let lockedMetadata = false;
 let savedDocumentSignature = "";
-const editorSettings = { lineNumberMode: "measure", autoWrap: false };
-const editorWarningSettings = createEditorWarningSettings({
-  button: document.querySelector("#romanWarningsButton"), control: document.querySelector("#romanWarningsControl"),
-  onChange: () => updateEditor(),
-});
-let chordPreferences = hostedMode ? normalizeRendererPreferences(null) : standaloneChordPreferences();
+const lineNumbering = createEditorLineNumbering({ button: lineNumberModeSwitch, control: lineNumberModeControl,
+  onChange: () => applyEditorSettings() });
+const editorSettings = { get lineNumberMode() { return lineNumbering.mode; }, autoWrap: false };
+const getWarningSettings = setupEditorWarningSettings(() => updateEditor());
+let chordPreferences = hostedMode ? normalizeRendererPreferences(null) : readStandaloneChordPreferences();
+const transpositionSession = createRendererTransposition({ getPreferences: () => chordPreferences, postToHost,
+  refresh: () => { refreshScoreLayout({ force: true }); rendererNav?.refreshPreferences(); } });
+const getScorePreferences = transpositionSession.getPreferences;
+const setTransposition = transpositionSession.set;
 const rendererDisplay = setupRendererDisplay({ canvas: rendererCanvas, hostedMode, tr, postToHost,
+  getTransposition: transpositionSession.get, updateTransposition: setTransposition,
   getPreferences: () => chordPreferences,
   updatePreferences: (next) => { if (setChordPreferences(next)) renderSource({ preserveScroll: true }); },
   refreshLayout: () => refreshScoreLayout({ force: true }),
@@ -362,7 +359,7 @@ function metadataAfterImport(imported) {
 }
 
 const { highlightSource, updateLineGutter } = createSourceEditor({ sourceInput, highlightLayer, lineWrapMeasure, lineGutter,
-  getEditorSettings: () => ({ ...editorSettings, showRomanWarnings: editorWarningSettings.enabled }), formatDiagnostic: syntaxErrorMessage });
+  getEditorSettings: () => ({ ...editorSettings, ...getWarningSettings() }), formatDiagnostic: syntaxErrorMessage });
 toolboxUi = createToolbox({
   root: toolbox,
   sourceInput,
@@ -375,9 +372,6 @@ toolboxUi = createToolbox({
 function applyEditorSettings() {
   codeEditor.classList.toggle("is-word-wrap", editorSettings.autoWrap);
   sourceInput.wrap = editorSettings.autoWrap ? "soft" : "off";
-  const showsMeasures = editorSettings.lineNumberMode === "measure";
-  lineNumberModeSwitch.setAttribute("aria-checked", String(showsMeasures));
-  lineNumberModeControl.classList.toggle("is-on", showsMeasures);
   autoWrapButton.setAttribute("aria-checked", String(editorSettings.autoWrap));
   autoWrapControl.classList.toggle("is-on", editorSettings.autoWrap);
   updateEditor();
@@ -393,7 +387,8 @@ function parseMainSource(source, documentMetadata = metadata) {
 
 function updateEditor(result = parseMainSource(sourceInput.value)) {
   const lines = sourceInput.value.split("\n");
-  updateLineGutter(lines, result);
+  const labels = updateLineGutter(lines, result);
+  if (isHostedViewer) postToHost("source-numbering", { main: sourceInput.value, labels });
   lineCount.textContent = tr("lines", { count: lines.length });
   highlightLayer.innerHTML = highlightSource(sourceInput.value, result.errors.filter((error) => !error.metadataDomain), result.warnings);
   return result;
@@ -472,7 +467,7 @@ function makeTimeSignature(value) {
 
 const { appendChordNotation, appendRomanNotation, makeRomanSymbol, makeEventValue, openChordPopover, closeChordPopover, closeRomanPopover, positionChordPopover, positionRomanPopover, getCurrentChordPopover, chordPianoPlayer } = createSymbolUi({
   makeElement,
-  getChordPreferences: () => chordPreferences,
+  getChordPreferences: getScorePreferences,
   getHostedPopoverDocument: () => hostedChordPopoverDocument,
   pianoOptions: documentAdapter?.pianoOptions,
   chordPopover, chordPopoverSymbol, chordPopoverIntervals, chordPopoverNoteNames, chordPopoverStaff, chordPopoverStaffError, chordPopoverAudioError, chordPopoverPlay, chordPopoverPlayLabel,
@@ -485,7 +480,7 @@ const renderCommentText = (target, text) => renderInlineMusicText(target, text, 
   specialChords: editorConfig.specialChords,
   romanConfig: editorConfig.romanConfig,
   renderMode: chordPreferences.renderMode,
-  preferences: chordPreferences,
+  preferences: getScorePreferences(),
 });
 
 const { openCommentPopover, closeCommentPopover, positionCommentPopover } = createCommentPopover({
@@ -520,7 +515,7 @@ const { makeTagLabel, makeFormSymbol, renderSystem, markEndingSystems, drawEndin
   makeBpmLabel,
   makeMetricModulationLabel,
   makeTimeSignature,
-  getChordPreferences: () => chordPreferences,
+  getChordPreferences: getScorePreferences,
   getRendererLayers: () => rendererLayers,
   getLocale: getInterfaceLocale,
   openCommentPopover,
@@ -577,7 +572,7 @@ function renderResult(result) {
   renderedScoreTargetWidth = targetWidth;
   const systems = layoutSystems(result.flow, targetWidth, {
     rendererScale: rendererDisplay.getScale(),
-    preferences: chordPreferences,
+    preferences: getScorePreferences(),
     durationDisplayMode: chordPreferences.durationDisplayMode,
     locale: getInterfaceLocale(),
     layers: rendererLayers,
@@ -676,6 +671,7 @@ const initializeFromHost = createHostedDocumentInitializer({
   applyRendererScale: rendererDisplay.setScale,
   applySearchVocabulary: editorConfig.applySearchVocabulary,
   replaceDocument: (next) => {
+    setTransposition(null, { refresh: false });
     metadata = next.metadata; comments = next.comments; lockedMetadata = next.lockedMetadata;
     commentDialogUi.resetCommentDraft(); resetMetadataDraft();
   },
@@ -705,6 +701,7 @@ async function resetToBlankDocument({ announce = true } = {}) {
     if (dialog.open) dialog.close();
   }
   metadata = nextMetadata;
+  setTransposition(null, { refresh: false });
   comments = normalizeComments([]);
   lockedMetadata = false;
   resetMetadataDraft();
@@ -727,6 +724,7 @@ const loadMstructText = createAnalysisDocumentLoader({
   getMetadata: () => metadata, metadataAfterImport,
   setError: (error) => setHostStatus(documentErrorMessage(error), false),
   applyDocument: (documentResult, importedMetadata, name) => {
+    setTransposition(null, { refresh: false });
     metadata = importedMetadata;
     sourceInput.disabled = isHostedViewer || Boolean(documentProfile.error);
     metadataButton.disabled = isHostedViewer || Boolean(documentProfile.error);
@@ -781,7 +779,7 @@ scoreExportUi = setupScoreExport({
   prepareScore: () => renderSource({ preserveScroll: true }),
   getSuggestedName: () => createMstructFileName(metadata),
   layoutScoreSystems: (result, targetWidth) => layoutSystems(result.flow, targetWidth, {
-    preferences: chordPreferences,
+    preferences: getScorePreferences(),
     durationDisplayMode: chordPreferences.durationDisplayMode,
     locale: getInterfaceLocale(),
     layers: rendererLayers,
@@ -842,7 +840,7 @@ rendererNav = setupRendererNav({
   pianoPlayer: chordPianoPlayer,
   getLocale: getInterfaceLocale,
   getComments: () => comments,
-  getChordPreferences: () => chordPreferences,
+  getChordPreferences: getScorePreferences,
   renderCommentText,
   getSearchOptions: () => editorConfig.searchOptions,
   makeTagLabel,
@@ -905,10 +903,6 @@ if (!hostedMode) {
     },
   });
 }
-lineNumberModeSwitch.addEventListener("click", () => {
-  editorSettings.lineNumberMode = editorSettings.lineNumberMode === "measure" ? "line" : "measure";
-  applyEditorSettings();
-});
 autoWrapButton.addEventListener("click", () => {
   editorSettings.autoWrap = !editorSettings.autoWrap;
   applyEditorSettings();
@@ -955,7 +949,7 @@ chordPopoverPlay.addEventListener("click", async () => {
   chordPopoverPlayLabel.textContent = tr("loadingPiano");
   chordPopoverAudioError.hidden = true;
   try {
-    await chordPianoPlayer.play(current.midiNotes);
+    await chordPianoPlayer.play(current.audioMidiNotes);
   } catch {
     chordPianoPlayer.dispose();
     chordPopoverAudioError.hidden = false;
@@ -981,6 +975,7 @@ rendererCanvas.addEventListener("scroll", () => {
 }, { passive: true });
 
 window.addEventListener("pagehide", () => {
+  lineNumbering.destroy();
   rendererDisplay.destroy();
   if (overlayFrame !== null) window.cancelAnimationFrame(overlayFrame);
   chordPianoPlayer.dispose();
@@ -1009,6 +1004,9 @@ if (hostedMode) {
     if (event.data.type === "mstruct-profile") void initializeFromHost(event.data);
     if (event.data.type === "chord-preferences" && setChordPreferences(event.data.chordPreferences)) renderSource();
     if (event.data.type === "renderer-scale") rendererDisplay.setScale(event.data.rendererScale);
+    if (event.data.type === "transposition") setTransposition(event.data.transposition);
+    if (event.data.type === "renderer-scroll-complete") rendererNav?.completeHostScroll();
+    if (event.data.type === "renderer-viewport") rendererNav?.setHostViewport(event.data.viewport);
     if (event.data.type === "playback-command") rendererNav?.handleCommand(event.data.command, event.data.value);
     timelineIo?.handleMessage(event.data);
     if (event.data.type === "timeline-files") timelineEditorUi?.setFiles(event.data.timelines ?? [], event.data.selectedTimeline ?? "");
@@ -1040,9 +1038,9 @@ await desktopWorkspace?.start();
 
 setupEditorVideoExport({ api: desktopApi, tr, profileSession: documentProfile, parse: parseMainSource,
   navigation: () => rendererNav, display: rendererDisplay, render: renderSource, refreshLayout: () => refreshScoreLayout({ force: true }),
-  getDocument: () => ({ main: sourceInput.value, metadata, comments }), getPreferences: () => chordPreferences, getLayers: () => rendererLayers,
+  getDocument: () => ({ main: sourceInput.value, metadata, comments }), getPreferences: getScorePreferences, getLayers: () => rendererLayers,
   applySnapshot(snapshot) {
     metadata = normalizeMetadata(snapshot.metadata); comments = normalizeComments(snapshot.comments);
-    setInterfaceLocale(snapshot.locale); setChordPreferences(snapshot.preferences); applyInterfaceLocale();
+    setInterfaceLocale(snapshot.locale); setChordPreferences(snapshot.preferences); setTransposition(snapshot.preferences, { refresh: false }); applyInterfaceLocale();
     rendererLayers = normalizeRendererLayers(snapshot.layers); sourceInput.value = snapshot.main;
   } });

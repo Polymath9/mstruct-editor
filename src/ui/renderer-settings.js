@@ -4,8 +4,10 @@ import {
   shortcutFromKeyboardEvent,
   writeRendererShortcuts,
 } from "../core/renderer-shortcuts.js";
+import { TRANSPOSE_INTERVALS } from "../core/transposition.js";
+import { getInterfaceLocale } from "../editor-i18n.js";
 
-export function setupRendererSettings({ getPreferences, updatePreferences, getScale, updateScale, canScale = () => true, openHostSettings, storageKey, tr }) {
+export function setupRendererSettings({ getPreferences, updatePreferences, getTransposition, updateTransposition, getScale, updateScale, canScale = () => true, openHostSettings, storageKey, tr }) {
   const button = document.querySelector("#rendererSettingsButton");
   const dialog = document.querySelector("#rendererSettingsDialog");
   const close = document.querySelector("#rendererSettingsClose");
@@ -23,9 +25,20 @@ export function setupRendererSettings({ getPreferences, updatePreferences, getSc
   const status = document.querySelector("#rendererSettingsStatus");
   const shortcutInputs = [...document.querySelectorAll("[data-shortcut-action]")];
   let shortcuts = readRendererShortcuts();
+  const direction = document.querySelector("#rendererTransposeDirection");
+  const interval = document.querySelector("#rendererTransposeInterval");
+  const follows = document.querySelector("#rendererPianoFollowsTranspose");
+  for (const input of [direction, interval, follows]) input.addEventListener("change", () => updateTransposition({
+    transposeDirection: direction.value, transposeInterval: interval.value, pianoFollowsTranspose: follows.checked,
+  }));
 
   function reflectPreferences() {
     const preferences = getPreferences();
+    const transposition = getTransposition();
+    direction.value = transposition.transposeDirection;
+    interval.replaceChildren(...TRANSPOSE_INTERVALS.map(item => new Option(item[getInterfaceLocale() === "en" ? "en" : "zh"], item.id)));
+    interval.value = transposition.transposeInterval;
+    follows.checked = transposition.pianoFollowsTranspose;
     renderMode.value = preferences.renderMode;
     qualitySelects.forEach((select) => { select.value = preferences[select.dataset.chordQualityPreference]; });
     sharp9AsFlat10.checked = preferences.sharp9AsFlat10;

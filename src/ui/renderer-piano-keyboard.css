@@ -1,0 +1,14 @@
+.renderer-canvas.renderer-has-piano-space::after { content: ""; display: block; height: var(--piano-bottom-space, 124px); pointer-events: none; }
+.renderer-piano-keyboard { position: absolute; z-index: 25; padding: 7px; border: 1px solid #69716c; border-radius: 8px; background: #272d29; box-shadow: 0 4px 16px #0005; box-sizing: border-box; }
+.renderer-piano-keyboard[hidden] { display: none; }
+.renderer-piano-scroll { overflow-x: auto; scrollbar-width: thin; scrollbar-color: #89998f #272d29; }
+.renderer-piano-keys { position: relative; width: max(100%, calc(var(--white-key-count) * 15px)); height: 78px; user-select: none; }
+.renderer-piano-key { position: absolute; left: calc(var(--key-position) * 100% / var(--white-key-count)); top: 0; width: calc(100% / var(--white-key-count)); height: 78px; padding: 0 0 4px; display: flex; align-items: end; justify-content: center; border: 1px solid #6b716c; border-radius: 0 0 3px 3px; background: #fffef8; color: #606761; font: 9px Arial, sans-serif; cursor: pointer; touch-action: none; }
+.renderer-piano-key.is-black { z-index: 1; width: calc(64% / var(--white-key-count)); height: 48px; background: #202522; border-color: #111; }
+.renderer-piano-key.is-active { background: #f1c958; }
+.renderer-piano-key.is-black.is-active { background: #bb8f20; }
+.renderer-piano-key.is-pressed { background: #76bba1; }
+.renderer-piano-key.is-black.is-pressed { background: #408a6f; }
+.renderer-piano-key:disabled { opacity: .45; cursor: default; }
+.renderer-piano-key:focus-visible { outline: 2px solid #4c9fde; outline-offset: -3px; }
+.renderer-piano-status { color: #ffdb8a; font-size: 12px; padding-top: 4px; }

@@ -7,7 +7,7 @@ import test from "node:test";
 import { prepareDesktopProfile } from "../scripts/prepare-desktop-profile.mjs";
 import { PROFILE_FILES } from "../src/core/profile-schema.js";
 import { verifyMstructProfile } from "../src/core/profile.js";
-import { resolveMstructDocument } from "../src/core/profile-document.js";
+import { compileProfileDocument, resolveMstructDocument } from "../src/core/profile-document.js";
 import { parseMstructDocument } from "../src/core/mstruct-document.js";
 import { loadDesktopTimelineFiles } from "../src/runtime/timeline-io.js";
 import { nextDesktopVersion, desktopBuildVersion } from "../desktop/version.mjs";
@@ -35,6 +35,10 @@ const sha256 = (value) => createHash("sha256").update(value).digest("hex");
 test("bundled startup demo needs no external timeline and genuine missing-file warnings remain active", async () => {
   const demo = parseMstructDocument(await readFile(new URL("../examples/k545.mstruct", import.meta.url), "utf8"));
   assert.equal(demo.ok, true);
+  const profile = await verifyMstructProfile(JSON.parse(await readFile(new URL("../src/config/official-profile.json", import.meta.url), "utf8")));
+  const compiled = compileProfileDocument(demo, profile);
+  assert.equal(compiled.ok, true, JSON.stringify(compiled.errors));
+  assert.deepEqual(compiled.warnings.filter(warning => warning.romanValidation), []);
   assert.deepEqual(demo.metadata.mstructtimeFiles, [], "The unsaved startup demo cannot resolve external timeline files.");
   const warnings = [], loaded = [];
   const options = {

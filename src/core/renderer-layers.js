@@ -1,7 +1,7 @@
 export const RENDERER_LAYERS_STORAGE_KEY = "mstruct-renderer-layers-v1";
 export const RENDERER_LAYERS_CHANNEL = "mstruct-renderer-layers-v1";
-export const RENDERER_LAYER_KEYS = Object.freeze(["speed", "form", "tags", "comments", "newRiemannian"]);
-export const DEFAULT_RENDERER_LAYERS = Object.freeze(Object.fromEntries(RENDERER_LAYER_KEYS.map((key) => [key, true])));
+export const RENDERER_LAYER_KEYS = Object.freeze(["speed", "form", "tags", "comments", "newRiemannian", "pianoKeyboard"]);
+export const DEFAULT_RENDERER_LAYERS = Object.freeze(Object.fromEntries(RENDERER_LAYER_KEYS.map((key) => [key, key !== "pianoKeyboard"])));
 
 export function tagIsVisible(tag, layers) { return tag.form ? layers.form : layers.tags; }
 
@@ -13,7 +13,7 @@ export function visibleTagLanes(source, layers) {
 
 export function normalizeRendererLayers(value) {
   const source = value && typeof value === "object" ? value : {};
-  return Object.fromEntries(RENDERER_LAYER_KEYS.map((key) => [key, source[key] !== false]));
+  return Object.fromEntries(RENDERER_LAYER_KEYS.map((key) => [key, typeof source[key] === "boolean" ? source[key] : DEFAULT_RENDERER_LAYERS[key]]));
 }
 
 export function readRendererLayers(storage) {

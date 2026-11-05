@@ -14,12 +14,13 @@ export function notationModel(text, roman = false, accidentalClass = "") {
 }
 
 export function chordSymbolModel(result, mode, preferences, center) {
-  return element("span", "score-chord-symbol", displayChordParts(result, mode, preferences, center).map((part) => {
+  const parts = displayChordParts(result, mode, preferences, center);
+  return element("span", "score-chord-symbol", parts.map((part) => {
     const role = `score-chord-${part.role}${part.role === "separator" && part.text === "on" ? " score-chord-on" : ""}`;
     const accidentalClass = part.accidentalPlacement ? `score-chord-note-accidental-${part.accidentalPlacement}` : "";
     const placementClass = part.superscriptStyle === "roman" ? "score-roman-sup" : part.superscript ? "score-chord-sup" : "score-chord-part";
     return element(part.superscript ? "sup" : "span", `${placementClass} ${role}`, part.notation ? notationModel(part.text, false, accidentalClass) : [part.text]);
-  }), { "aria-label": result.source });
+  }), { "aria-label": toMusicGlyphs(parts.map(part => part.text).join("")) });
 }
 
 function figureStackModel(rows, general = false) {

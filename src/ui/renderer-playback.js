@@ -6,6 +6,7 @@ import {
   playbackEntriesForSlot,
 } from "../core/mstruct-playback.js";
 import { DEFAULT_GLOBAL_PLAYBACK_OFFSET } from "../core/renderer-preferences.js";
+import { transposeMidiNotes } from "../core/transposition.js";
 
 const EMPTY_POSITION = "—";
 const SUPPORTED_BGM_EXTENSION = /\.(?:mp3|wav)$/i;
@@ -20,7 +21,7 @@ function supportedBgmFile(file) {
   return SUPPORTED_BGM_EXTENSION.test(file.name) || SUPPORTED_BGM_TYPE.has(String(file.type ?? "").toLowerCase());
 }
 
-export function createRendererPlayback({ canvas, onStateChange, requestScroll, closePopovers, pianoPlayer, mediaElement }) {
+export function createRendererPlayback({ canvas, onStateChange, requestScroll, closePopovers, pianoPlayer, mediaElement, getPreferences = () => ({}) }) {
   let result = null;
   let stableTempo = false;
   let timelineDocument = null;
@@ -191,7 +192,7 @@ export function createRendererPlayback({ canvas, onStateChange, requestScroll, c
       pianoPlayer?.stop();
       const remainingSeconds = (entry.pianoEndMs - elapsedMs) / 1000;
       if (entry.midiNotes?.length && remainingSeconds > 0) {
-        void pianoPlayer.play(entry.midiNotes, { durationSeconds: remainingSeconds }).catch(() => {
+        void pianoPlayer.play(transposeMidiNotes(entry.midiNotes, getPreferences(), { audio: true }), { durationSeconds: remainingSeconds }).catch(() => {
           pianoPlayer.dispose();
           setNotice("piano-failed", 2500);
         });
@@ -745,6 +746,7 @@ export function createRendererPlayback({ canvas, onStateChange, requestScroll, c
       if (action === "stop") stop();
     },
     setDocument,
+    refreshPreferences() { updateActive({ forcePiano: true }); emit(); },
     setTimelineDocument,
     refreshTimelineDocument,
     setTemporaryOffset,

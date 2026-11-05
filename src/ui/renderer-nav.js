@@ -13,6 +13,8 @@ import { RENDERER_LAYERS_CHANNEL } from "../core/renderer-layers.js";
 import { RENDERER_AUDIO_ICONS } from "./renderer-audio-icons.js";
 import { observeRendererNavHeight } from "./renderer-nav-layout.js";
 import { createRendererPresentation } from "./renderer-presentation.js";
+import { createRendererPianoKeyboard } from "./renderer-piano-keyboard.js";
+import "./renderer-piano-keyboard.css";
 
 export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPreviewMode = false, presentationEnabled = false, videoPresentationEnabled = false, onPresentationModeChange, onChooseVideo, postToHost, closePopovers, pianoPlayer, getLocale, getComments, getChordPreferences, renderCommentText, getSearchOptions, getRendererLayers, onRendererLayersChange, makeTagLabel, makeFormSymbol, makeBpmLabel, appendChordNotation, openChordPopover, setFullscreenPopovers, onFullscreenLayoutChange, onPresentationGeometryChange, onTimelineChange, onTimelineManage, onTimelineDownload, onTimelineHistory, onPlaybackState, onChooseBgm, onTimelineAudioChange }) {
   const nav = document.querySelector(".renderer-nav");
@@ -55,6 +57,8 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
   const layerInputs = [...layersPanel.querySelectorAll("[data-renderer-layer]")];
   const layersChannel = typeof BroadcastChannel === "function" ? new BroadcastChannel(RENDERER_LAYERS_CHANNEL) : null;
   let presentation = null;
+  const keyboard = createRendererPianoKeyboard({ panel: document.querySelector("#rendererPanel"), canvas: rendererCanvas, nav,
+    player: pianoPlayer, getPreferences: getChordPreferences, getLayers: getRendererLayers, tr, isHostedViewer, requestScroll });
   const fullscreen = createRendererFullscreen({
     rendererPanel: document.querySelector("#rendererPanel"),
     canvas: rendererCanvas,
@@ -84,6 +88,8 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
       onPresentationModeChange?.(value);
       postToHost("presentation-mode", { mode });
       onFullscreenLayoutChange?.({ force: true });
+      keyboard.refresh();
+      reflectLayers();
     },
     getPreviousEntry: entry => playback.getPreviousEntry(entry),
     getPlaybackEntries: () => playback.getPlaybackEntries(),
@@ -142,21 +148,24 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
     postToHost("playback-state", { playback: state });
     fullscreen.update(state, activeEntry);
     presentation?.update(state, activeEntry);
+    keyboard.update(state.mode === "stopped" ? null : activeEntry, state);
     onPlaybackState?.(state, activeEntry);
   }
 
   function requestScroll(element) {
     if (rendererCanvas.dataset.fixedScale === "true") return;
     const scrollTarget = element.closest(".score-system") ?? element;
-    const rect = scrollTarget.getBoundingClientRect();
+    const obstruction = keyboard.scrollObstruction(element);
+    const rect = obstruction?.target ?? scrollTarget.getBoundingClientRect();
     if (isHostedViewer && !document.body.classList.contains("renderer-fullscreen-external")) {
-      postToHost("playback-scroll", { top: rect.top, height: rect.height });
+      if (obstruction) keyboard.waitForHostScroll(element);
+      postToHost("playback-scroll", { top: rect.top, height: rect.height, bottomInset: obstruction?.bottomInset ?? 0, keyboardScroll: Boolean(obstruction) });
       return;
     }
     const canvasRect = rendererCanvas.getBoundingClientRect();
     const navHeight = nav.offsetHeight;
     const visibleTop = canvasRect.top + navHeight;
-    if (rect.top >= visibleTop && rect.bottom <= canvasRect.bottom) return;
+    if (!obstruction && rect.top >= visibleTop && rect.bottom <= canvasRect.bottom) return;
     const nextTop = rendererCanvas.scrollTop + rect.top - visibleTop;
     rendererCanvas.scrollTo({ top: Math.max(0, nextTop), behavior: "auto" });
   }
@@ -185,6 +194,7 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
     requestScroll,
     closePopovers,
     pianoPlayer,
+    getPreferences: getChordPreferences,
     mediaElement: presentation?.mediaElement,
   });
   const search = createRendererSearch({
@@ -229,7 +239,10 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
   }
 
   function reflectLayers(value = getRendererLayers()) {
-    for (const input of layerInputs) input.checked = value[input.dataset.rendererLayer] !== false;
+    for (const input of layerInputs) {
+      input.checked = value[input.dataset.rendererLayer] === true;
+      input.disabled = input.dataset.rendererLayer === "pianoKeyboard" && !keyboard.available();
+    }
     postToHost("layer-state", { layers: value });
   }
 
@@ -242,6 +255,7 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
   function updateLayers(value, { broadcast = true } = {}) {
     onRendererLayersChange?.(value);
     reflectLayers(getRendererLayers());
+    keyboard.refresh();
     if (broadcast) layersChannel?.postMessage({ type: "state", layers: getRendererLayers() });
   }
 
@@ -382,6 +396,7 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
       search.refreshLocale();
     },
     updateDocument({ result, isStableTempo, globalOffset, userOffset, timelineDocument }) {
+      keyboard.setDocument(result);
       stableTempo = isStableTempo;
       reflectTimelineVisibility();
       playback.setDocument({ result, stableTempo: isStableTempo, globalOffset, userOffset, timelineDocument });
@@ -438,7 +453,11 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
       presentation?.refresh();
       search.refreshRenderedScore();
       fullscreen.refresh();
+      keyboard.refresh();
     },
+    refreshPreferences() { playback.refreshPreferences(); keyboard.refresh(); fullscreen.refresh(); },
+    setHostViewport: keyboard.setViewport,
+    completeHostScroll: keyboard.completeHostScroll,
     refreshPresentationContent() { presentation?.refreshContent(); },
     handleCommand(command, value) {
       if (["play", "pause", "stop"].includes(command)) playback.run(command);
@@ -477,6 +496,7 @@ export function setupRendererNav({ tr, rendererCanvas, isHostedViewer, desktopPr
       search.destroy();
       fullscreen.destroy();
       presentation?.destroy();
+      keyboard.destroy();
     },
   };
 }

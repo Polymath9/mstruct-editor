@@ -165,6 +165,7 @@ export class IntervalStructure {
     this.root = root;
     this.isSlashChord = Boolean(options.isSlashChord);
     this.isPolychord = Boolean(options.isPolychord);
+    this.sourceHasSeventh = options.sourceHasSeventh;
     this.items = intervals.map((item) => typeof item === "string" ? makeItem(item, "manual") : cloneItem(item));
     this.sort();
   }
@@ -173,8 +174,12 @@ export class IntervalStructure {
     return this.items.map(intervalText);
   }
 
+  get hasSeventh() {
+    return this.sourceHasSeventh ?? this.items.some(item => (item.degree - 1) % 7 === 6);
+  }
+
   clone() {
-    return new IntervalStructure(this.items, this.root, { isSlashChord: this.isSlashChord, isPolychord: this.isPolychord });
+    return new IntervalStructure(this.items, this.root, { isSlashChord: this.isSlashChord, isPolychord: this.isPolychord, sourceHasSeventh: this.sourceHasSeventh });
   }
 
   sort() {
@@ -268,6 +273,7 @@ export class IntervalStructure {
     if (this.isSlashChord) {
       throw new ChordSyntaxError("slash-nested", sourceSpan.start, sourceSpan.end, {}, "A slash chord cannot receive another bass note.");
     }
+    this.sourceHasSeventh = this.hasSeventh || shiftedRootDegree(this.root, slashRoot) === 7;
     const oldRoot = this.root;
     const baseDegree = shiftedRootDegree(slashRoot, oldRoot);
     const baseSemitones = ascendingPitchDistance(slashRoot, oldRoot);

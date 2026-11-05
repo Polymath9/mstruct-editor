@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { parseSpecialChordCsv } from "../src/core/chord-symbol.js";
 import { parseMstruct } from "../src/core/mstruct.js";
+import { parseMstructDocument } from "../src/core/mstruct-document.js";
 import { syntaxErrorMessage } from "../src/editor-i18n.js";
 import {
   parseRomanConfigCsv,
@@ -22,6 +23,53 @@ const [basicCsv, advancedCsv, figuredBassCsv, specialCsv, chordCsv] = await Prom
 const config = parseRomanConfigCsv({ basicCsv, advancedCsv, figuredBassCsv, specialCsv });
 const specialChords = parseSpecialChordCsv(chordCsv);
 const parse = (source, tonalMode = "M", chainContext = null) => parseRomanSymbol(source, { config, tonalMode, chainContext });
+
+test("Roman validation compares bass pitch classes and recognizes seventh figures", () => {
+  const check = (body, center = "C") => {
+    const result = parseMstruct(`{BN:1}{TS:1/4}{D:1/4}{TC:${center}}${body};`, { specialChords, romanConfig: config });
+    assert.equal(result.ok, true, JSON.stringify(result.errors));
+    return result.warnings.filter(warning => warning.romanValidation);
+  };
+  assert.equal(check("C|I").length, 0);
+  assert.equal(check("C/E|I6").length, 0);
+  assert.equal(check("C/E|I")[0].romanCode, "bass-mismatch");
+  assert.equal(check("G7|V")[0].romanCode, "seventh-figure-missing");
+  assert.equal(check("G7/B|V65").length, 0);
+  assert.equal(check("G/B|V65")[0].romanCode, "seventh-figure-unexpected");
+  assert.equal(check("G|V7")[0].romanCode, "seventh-figure-unexpected");
+  assert.equal(check("G/D|V43")[0].romanCode, "seventh-figure-unexpected");
+  assert.equal(check("G/F|V42").length, 0);
+  assert.equal(check("G/B|nVII[6,5-x]")[0].romanCode, "seventh-figure-unexpected");
+  assert.equal(check("D|V7/V")[0].romanCode, "seventh-figure-unexpected");
+  const annotationWarning = check("G/B|V6\\\\V65")[0];
+  assert.equal(annotationWarning.romanCode, "seventh-figure-unexpected");
+  assert.match(syntaxErrorMessage(annotationWarning, "zh"), /不含七音/);
+  assert.match(syntaxErrorMessage(annotationWarning, "en"), /has no seventh/);
+  assert.equal(check("Gadd7|V7").length, 0);
+  assert.equal(check("G6|V").length, 0);
+  assert.ok(check("C/B|I").some(warning => warning.romanCode === "seventh-figure-missing"));
+  assert.equal(check("C/A|vi").length, 0);
+  assert.equal(check("Cdim7|io", "c")[0].romanCode, "seventh-figure-missing");
+  assert.equal(check("G7|V[7,5,3-x]").length, 0);
+  assert.equal(check("G7/B|nVII[6,5-x]").length, 0);
+  assert.equal(check("G7/D|ii[4,3-x]").length, 0);
+  assert.equal(check("G7/F|IV[4,2-x]").length, 0);
+  assert.equal(check("D7|V7/V").length, 0);
+  assert.equal(check("C|I\\\\V")[0].romanCode, "bass-mismatch");
+  assert.equal(check("C#|bII").length, 0);
+  assert.equal(check("C|i", "c").length, 0);
+  assert.equal(check("|V").length, 0);
+  assert.equal(check("Cdim7|cto7").length, 0);
+});
+
+test("Renderer Test covers validation warnings, equivalent figures and a wide keyboard range", async () => {
+  const source = await readFile(new URL("./fixtures/validation-transposition.mstruct", import.meta.url), "utf8");
+  const result = parseMstruct(parseMstructDocument(source).main, { specialChords, romanConfig: config });
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  assert.ok(result.warnings.some(warning => warning.code === "roman-bass-mismatch"));
+  assert.ok(result.warnings.some(warning => warning.code === "roman-seventh-figure-missing"));
+  assert.ok(result.warnings.some(warning => warning.code === "roman-seventh-figure-unexpected"));
+});
 
 test("parses the documented Roman structures and applied chords", () => {
   const cases = [
@@ -230,9 +278,10 @@ test("Roman warnings keep exact ranges in ordinary, annotated and dual-Roman eve
     const result = parseMstruct(source, { specialChords, romanConfig: config });
     assert.equal(result.ok, true, JSON.stringify(result.errors));
     assert.equal(result.errors.length, 0);
-    assert.equal(result.warnings.length, [1, 2, 4][index]);
+    const recommendations = result.warnings.filter(warning => !warning.romanValidation);
+    assert.equal(recommendations.length, [1, 2, 4][index]);
     assert.ok(result.playbackRoute.length > 0);
-    for (const warning of result.warnings) {
+    for (const warning of recommendations) {
       assert.equal(warning.severity, "warning");
       assert.equal(source.slice(warning.start, warning.end), warning.details.base + warning.details.token);
       assert.equal(warning.line, 1);

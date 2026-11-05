@@ -298,7 +298,7 @@ export function createRendererFullscreen({
     noteNames.append(document.createTextNode("["));
     for (const [index, name] of information.noteNames.entries()) {
       if (index) noteNames.append(document.createTextNode(", "));
-      appendChordNotation(noteNames, name);
+      appendChordNotation(noteNames, name, true);
     }
     noteNames.append(document.createTextNode("]"));
   }
@@ -331,6 +331,7 @@ export function createRendererFullscreen({
       return;
     }
     const information = playbackEntryInformation(entry, {
+      ...getChordPreferences(),
       comments: getComments(),
       locale: getLocale(),
       sharp9AsFlat10: getChordPreferences().sharp9AsFlat10,
