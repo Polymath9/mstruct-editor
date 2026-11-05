@@ -11,6 +11,15 @@ contextBridge.exposeInMainWorld("mstructDesktop", Object.freeze({
     return () => ipcRenderer.removeListener("mstruct:save-before-transition", listener);
   },
   pianoInstrumentUrl: "mstruct-app://renderer/__desktop_assets__/soundfonts/acoustic_grand_piano-ogg.js",
+  videoCoverFontUrl: "mstruct-app://renderer/__desktop_assets__/fonts/NotoSansCJKsc-VF.otf",
+  copyVideoCover: (value) => ipcRenderer.invoke("mstruct-cover:copy", value),
+  saveVideoCover: (value) => ipcRenderer.invoke("mstruct-cover:save", value),
+  showVideoCoverMenu: (value) => ipcRenderer.invoke("mstruct-cover:menu", value),
+  onVideoCoverAction: (callback) => {
+    const listener = (_event, value) => callback(value);
+    ipcRenderer.on("mstruct-cover:image-action", listener);
+    return () => ipcRenderer.removeListener("mstruct-cover:image-action", listener);
+  },
   newDocument: () => ipcRenderer.invoke("mstruct:new"),
   openDocument: () => ipcRenderer.invoke("mstruct:open"),
   openRecentDocument: (id) => ipcRenderer.invoke("mstruct:open-recent", id),
@@ -70,6 +79,8 @@ contextBridge.exposeInMainWorld("mstructDesktop", Object.freeze({
   },
   onCommand: (callback) => {
     if (typeof callback !== "function") return;
-    ipcRenderer.on("mstruct:command", (_event, command) => callback(command));
+    const listener = (_event, command) => callback(command);
+    ipcRenderer.on("mstruct:command", listener);
+    return () => ipcRenderer.removeListener("mstruct:command", listener);
   },
 }));

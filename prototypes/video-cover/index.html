@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'">
+  <title>MStruct · Video Cover Prototype</title>
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="../../src/ui/video-cover.css">
+</head>
+<body>
+  <header><img src="../../src/ui/video-cover-logo.svg" alt="MStruct" width="28" height="28"><strong>MStruct</strong><span class="badge" data-text="badge"></span>
+    <details id="file-menu"><summary data-text="file"></summary><nav>
+      <button id="open-menu" data-text="open"></button><hr>
+      <button id="generate-menu" data-text="generate" hidden></button>
+      <button id="folder-menu" data-text="folder" hidden></button><hr>
+      <button id="back-menu" data-text="back" hidden></button>
+    </nav></details><button id="language" class="language" data-text="language"></button>
+  </header>
+  <main>
+    <section id="empty"><img src="../../src/ui/video-cover-logo.svg" alt="" width="72" height="72"><h1 data-text="empty"></h1><p data-text="emptyHint"></p><div class="actions"><button id="open" class="primary" data-text="open"></button><button id="demo" data-text="demo"></button></div></section>
+    <section id="song" hidden><span class="eyebrow" data-text="songHint"></span><h1 id="song-title"></h1><p id="song-author"></p><code id="song-file"></code><div class="actions"><button id="generate" class="primary" data-text="generate"></button></div></section>
+    <p id="app-status" role="status"></p>
+  </main>
+  <footer data-text="prototypeHint"></footer>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

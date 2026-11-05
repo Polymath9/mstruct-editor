@@ -49,6 +49,7 @@ import { setupEditorVideoExport } from "./runtime/editor-video-export.js";
 import { isVideoExportStage } from "./runtime/video-export-stage.js";
 import { setupDesktopAppearance } from "./runtime/desktop-appearance.js";
 import { setupDesktopWorkspace } from "./runtime/desktop-workspace.js";
+import { setupDesktopVideoCover } from "./runtime/desktop-video-cover.js";
 import { setupDocumentSession } from "./runtime/document-session.js";
 import { bindHostedPopoverLifecycle, mountHostedPopovers } from "./runtime/hosted-popovers.js";
 import { createEditorConfig } from "./runtime/editor-config.js";
@@ -93,7 +94,7 @@ const editorConfig = createEditorConfig({
   parseSemanticTagConfigCsv,
 });
 const DEFAULT_TOOLBOX_CONFIG_CSV = { menuCsv: toolboxMenuCsv, eventCsv: toolboxEventCsv };
-let rendererNav, toolboxUi, languageSwitcherUi, timelineEditorUi, documentSession, scoreExportUi, standaloneProfiles, profileManagerUi, applicationSettingsUi, desktopWorkspace;
+let rendererNav, toolboxUi, languageSwitcherUi, timelineEditorUi, documentSession, scoreExportUi, standaloneProfiles, profileManagerUi, applicationSettingsUi, desktopWorkspace, desktopVideoCover;
 const hostedProfiles = createHostedProfiles();
 const documentProfile = createDocumentProfileSession({
   resolveProfile: (identity) => hostedMode ? hostedProfiles.resolve(identity) : standaloneProfiles.resolve(identity),
@@ -109,6 +110,7 @@ function applyInterfaceLocale() {
   profileManagerUi?.updateLocale();
   applicationSettingsUi?.refreshLocale();
   desktopWorkspace?.refreshLocale();
+  desktopVideoCover?.refreshLocale();
   desktopApi?.setLocale(getInterfaceLocale());
   document.documentElement.lang = getInterfaceLocale() === "en" ? "en" : "zh-CN";
   document.title = tr(timelineEditorUi?.mode === "timeline" ? "timelineEditorTitle" : "appTitle");
@@ -222,6 +224,11 @@ if (!hostedMode) {
   applicationSettingsUi = setupDesktopAppearance({ desktopApi, button: document.querySelector("#applicationSettingsButton"), tr,
     rules: standaloneProfiles, openRules: () => profileManagerUi.open(),
     openEditorSettings: () => editorSettingsDialog.showModal(),
+    onLocaleChange: locale => {
+      setInterfaceLocale(locale);
+      applyInterfaceLocale();
+      renderSource({ preserveScroll: true });
+    },
     onPlaybackPreferencesChanged: next => { if (setChordPreferences(next)) renderSource({ preserveScroll: true }); },
     errorMessage: error => error.code ? documentErrorMessage(error) : tr("profileOperationFailed"),
   });
@@ -891,7 +898,7 @@ timelineEditorUi = setupTimelineEditor({
   io: timelineIo.io,
 });
 timelineEditorUi.updateDocument({ isStableTempo: normalizeMetadata(metadata).isStableTempo });
-if (!hostedMode) {
+if (!hostedMode && !desktopApi) {
   languageSwitcherUi = setupLanguageSwitcher({
     root: document.querySelector("#standaloneLanguage"),
     button: document.querySelector("#standaloneLanguageButton"),
@@ -983,6 +990,7 @@ window.addEventListener("pagehide", () => {
   languageSwitcherUi?.destroy();
   documentSession?.destroy();
   scoreExportUi?.destroy();
+  desktopVideoCover?.destroy();
   cleanupHostedPopovers();
 });
 
@@ -1035,6 +1043,8 @@ desktopWorkspace = setupDesktopWorkspace({ api: desktopApi, profiles: standalone
   refreshLayout: () => requestAnimationFrame(() => refreshScoreLayout({ force: true })), onTimelines: files => timelineEditorUi?.setFiles(files),
   onMissingTimelines: missing => window.alert(tr("timelineMissingNotice", { names: missing.join(", ") })), errorMessage: syntaxErrorMessage });
 await desktopWorkspace?.start();
+desktopVideoCover = setupDesktopVideoCover({ api: desktopApi, canOpen: () => Boolean(desktopWorkspace && !desktopWorkspace.browsing), getLocale: getInterfaceLocale,
+  getMetadata: () => metadataDialog.open && metadataFields.childElementCount > 0 ? currentMetadataFromForm() : metadata });
 
 setupEditorVideoExport({ api: desktopApi, tr, profileSession: documentProfile, parse: parseMainSource,
   navigation: () => rendererNav, display: rendererDisplay, render: renderSource, refreshLayout: () => refreshScoreLayout({ force: true }),

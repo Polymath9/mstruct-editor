@@ -8,6 +8,14 @@ export function readStandaloneLocale(storageKey = INTERFACE_LOCALE_STORAGE_KEY) 
   }
 }
 
+export function persistStandaloneLocale(locale, storageKey = INTERFACE_LOCALE_STORAGE_KEY) {
+  try {
+    window.localStorage.setItem(storageKey, locale);
+  } catch {
+    // The language still applies for the current page when storage is unavailable.
+  }
+}
+
 export function setupLanguageSwitcher({ root, button, getLocale, setLocale, applyLocale, storageKey = INTERFACE_LOCALE_STORAGE_KEY }) {
   if (!root || !button) return null;
   const options = [...root.querySelectorAll("[data-locale]")];
@@ -28,11 +36,7 @@ export function setupLanguageSwitcher({ root, button, getLocale, setLocale, appl
 
   function select(locale) {
     setLocale(locale);
-    try {
-      window.localStorage.setItem(storageKey, locale);
-    } catch {
-      // The language still applies for the current page when storage is unavailable.
-    }
+    persistStandaloneLocale(locale, storageKey);
     close();
     applyLocale();
     reflect();

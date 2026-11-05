@@ -11,6 +11,7 @@
 | Academico, Bravura | Steinberg Media Technologies GmbH, SIL OFL 1.1 | [Academico](public/fonts/OFL-Academico.txt), [Bravura](public/fonts/OFL-Bravura.txt) |
 | Crimson Pro, Noto Serif, Noto Music | 各字体原作者 / respective font authors, SIL OFL 1.1 | [Crimson Pro](public/fonts/OFL-CrimsonPro.txt), [Noto Serif](desktop/assets/licenses/OFL-Noto-Serif.txt), [Noto Music](desktop/assets/licenses/OFL-Noto-Music.txt) |
 | MStruct Text Accidentals | Noto Music 派生子集 / derived Noto Music subset, SIL OFL 1.1 | [完整许可与修改说明 / Full license and changes](public/fonts/OFL-MStructTextAccidentals.txt) |
+| Noto Sans CJK SC 2.004（桌面视频封面 / desktop video covers） | Adobe, SIL OFL 1.1; unmodified variable OTF | [来源与版权 / Provenance and copyright](desktop/assets/fonts/NOTICE.md), [OFL](desktop/assets/fonts/OFL-NotoSansCJK.txt) |
 | Lucide inline icons | [Lucide](https://github.com/lucide-icons/lucide), ISC | [Lucide ISC](public/icons/LUCIDE-LICENSE.txt) |
 
 实际桌面分发的通知入口为 [`desktop/assets/THIRD_PARTY_NOTICES.txt`](desktop/assets/THIRD_PARTY_NOTICES.txt)，其中保留固定采样哈希。网页资源同样保留 `public/fonts/`、`public/icons/`、`public/licenses/` 的完整许可。构建工具和传递依赖的许可还保留在安装包自身及锁文件对应的 npm 包中；不随应用分发整套开发依赖。

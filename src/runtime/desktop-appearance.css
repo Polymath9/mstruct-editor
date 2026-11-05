@@ -17,6 +17,8 @@
 .editor-app[data-app-color-scheme] > .editor-header .standalone-language-menu button:hover { background: var(--ui-hover); }
 .editor-app[data-desktop-shell] #newButton, .editor-app[data-desktop-shell] #importButton, .editor-app[data-desktop-shell] #exportButton,
 .editor-app[data-desktop-shell] #applicationSettingsButton { display: none; }
+.editor-app[data-desktop-shell] #standaloneLanguage { display: none; }
+.library-open .editor-app[data-desktop-shell] > .editor-header { display: none; }
 .desktop-brand { display: flex; align-items: center; gap: 14px; flex: 0 0 auto; }
 .editor-app[data-desktop-shell] > .editor-header { gap: 18px; }
 .is-timeline-editor .editor-app[data-desktop-shell] #renderButton, .library-open .editor-app[data-desktop-shell] #renderButton { display: none; }

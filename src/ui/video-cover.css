@@ -1,0 +1,44 @@
+.video-cover-dialog { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 14px; color: #2c3039; background: #fff; }
+.video-cover-dialog * { box-sizing: border-box; }
+.video-cover-dialog :is(button, input, textarea) { font: inherit; }
+.video-cover-dialog button { border: 1px solid #d7dce4; border-radius: 7px; padding: 9px 14px; background: #fff; color: inherit; cursor: pointer; }
+.video-cover-dialog button:hover { background: #edf1f6; }
+.video-cover-dialog button:disabled { opacity: .45; cursor: default; }
+.video-cover-dialog :is(button, img):focus-visible { outline: 3px solid #7297c9; outline-offset: 3px; }
+.video-cover-dialog button.primary { background: #284d78; color: white; border-color: #284d78; }
+.video-cover-dialog button.primary:hover { background: #203f63; }
+.video-cover-dialog p { color: #79818e; line-height: 1.65; }
+.video-cover-dialog { width: min(1250px, calc(100vw - 48px)); max-height: calc(100vh - 48px); padding: 0; border: 1px solid #d8dde5; border-radius: 14px; box-shadow: 0 25px 100px #1f29374a; color: #2c3039; }
+.video-cover-dialog[open] { display: flex; flex-direction: column; }
+.video-cover-dialog::backdrop { background: #1b233c66; }
+.video-cover-dialog .dialog-heading { display: flex; flex-shrink: 0; justify-content: space-between; align-items: center; padding: 18px 26px 15px; border-bottom: 1px solid #e6e9ee; }
+.video-cover-dialog h2 { margin: 0 0 4px; font-size: 20px; }
+.video-cover-dialog .dialog-heading p, .video-cover-dialog .dialog-footer p { margin: 0; font-size: 12px; }
+.video-cover-dialog .close { font-size: 25px; border: 0; padding: 0 9px; }
+.video-cover-dialog .dialog-body { display: grid; grid-template-columns: 260px 1fr; overflow: auto; min-height: 0; }
+.video-cover-dialog aside { padding: 20px 22px; border-right: 1px solid #e6e9ee; }
+.video-cover-dialog label { display: block; font-weight: 600; margin-bottom: 9px; }
+.video-cover-dialog textarea { width: 100%; resize: vertical; min-height: 65px; max-height: 180px; border: 1px solid #d6dce5; border-radius: 7px; padding: 10px; line-height: 1.65; color: #303845; background: #fff; }
+.video-cover-dialog textarea:focus { outline: 2px solid #7396c4; outline-offset: 1px; }
+.video-cover-dialog .font-size-control { display: flex; align-items: center; gap: 8px; }
+.video-cover-dialog .font-size-control input[type="range"] { min-width: 0; flex: 1; accent-color: #284d78; }
+.video-cover-dialog .font-size-control input[type="number"] { width: 72px; padding: 7px; border: 1px solid #d6dce5; border-radius: 6px; }
+.video-cover-dialog .font-size-control input:focus-visible { outline: 2px solid #7396c4; outline-offset: 1px; }
+.video-cover-dialog .font-size-control span { color: #79818e; font-size: 12px; }
+.video-cover-dialog .layout-info { min-height: 20px; margin: 12px 0 0; text-align: center; font-size: 12px; }
+.video-cover-dialog small { display: block; color: #8b929d; font-size: 11px; margin: 8px 0 14px; line-height: 1.6; }
+.video-cover-dialog #cover-reset { width: 100%; margin-top: 2px; }
+.video-cover-dialog .note { font-size: 11px; margin-top: 16px; }
+.video-cover-dialog .previews { display: grid; grid-template-columns: 1.15fr 1fr; align-items: start; gap: 20px; padding: 25px; background: #f3f4f6; }
+.video-cover-dialog figure { margin: 0; min-width: 0; }
+.video-cover-dialog figcaption { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; color: #4a5668; }
+.video-cover-dialog figcaption span { font-size: 11px; color: #969daa; }
+.video-cover-dialog figure img { display: block; width: 100%; height: auto; background: #f7f5f1; border-radius: 3px; box-shadow: 0 5px 20px #282f3e10; }
+.video-cover-dialog #cover-wide { aspect-ratio: 16 / 9; }
+.video-cover-dialog #cover-standard { aspect-ratio: 4 / 3; }
+.video-cover-dialog .image-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 8px; }
+.video-cover-dialog .image-actions button { font-size: 12px; }
+.video-cover-dialog .dialog-footer { display: flex; flex-shrink: 0; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 24px; border-top: 1px solid #e6e9ee; }
+.video-cover-dialog output { display: block; min-height: 20px; color: #3d7459; font-size: 12px; margin-top: 5px; }
+.video-cover-dialog .error, .video-cover-dialog p.error { color: #a53c37; }
+@media (max-width: 1000px) { .video-cover-dialog .dialog-body { grid-template-columns: 225px 1fr; } .video-cover-dialog .previews { gap: 14px; padding: 20px; } }

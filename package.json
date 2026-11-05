@@ -1,6 +1,6 @@
 {
   "name": "mstruct-editor",
-  "version": "1.0.34",
+  "version": "1.0.36",
   "description": "Standalone MStruct analysis editor",
   "license": "MIT",
   "engines": {
@@ -48,6 +48,7 @@
       "desktop/application-menu.cjs",
       "desktop/document-transition.cjs",
       "desktop/video-export.cjs",
+      "desktop/video-cover.cjs",
       "desktop/raster-capture.cjs",
       "desktop/video-encoding.cjs",
       "desktop/video-stage-preload.cjs",

@@ -1,8 +1,12 @@
 .editor-app[data-desktop-shell][data-desktop-menu] { grid-template-rows: auto auto minmax(0, 1fr); }
+.library-open .editor-app[data-desktop-shell][data-desktop-menu] { grid-template-rows: auto minmax(0, 1fr); }
 .desktop-menu-bar { position: relative; z-index: 100; display: flex; align-items: center; gap: 3px; min-height: 30px; padding: 2px 8px; margin-inline: -30px; color: var(--ink); background: var(--card); border-bottom: 1px solid var(--line); user-select: none; }
 .desktop-menu-group { position: relative; }
 .desktop-menu-top { padding: 5px 10px; border: 0; border-radius: 4px; background: transparent; color: inherit; font: inherit; font-size: 13px; line-height: 18px; cursor: default; }
 .desktop-menu-top:hover, .desktop-menu-top[aria-expanded="true"], .desktop-menu-top:focus-visible { background: var(--ui-hover); color: var(--deep); outline: none; }
+.desktop-menu-language { display: flex; align-items: center; justify-content: center; min-width: 34px; }
+.desktop-menu-language > span { font-size: 16px; line-height: 18px; }
+.desktop-menu-group[data-menu-id="language"] > .desktop-menu-panel { min-width: 140px; }
 .desktop-menu-panel, .desktop-menu-submenu { position: absolute; top: 100%; left: 0; min-width: 230px; max-width: min(420px, calc(100vw - 16px)); padding: 5px; border: 1px solid var(--ui-border); border-radius: 6px; background: var(--card); color: var(--ink); box-shadow: 0 10px 25px rgba(var(--ui-shadow-rgb), .16); }
 .desktop-menu-row { position: relative; }
 .desktop-menu-row > button { display: flex; align-items: center; justify-content: space-between; gap: 24px; width: 100%; padding: 7px 10px; border: 0; border-radius: 3px; background: transparent; color: inherit; font: inherit; font-size: 13px; line-height: 20px; text-align: left; cursor: default; white-space: nowrap; }

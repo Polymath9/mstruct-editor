@@ -13,6 +13,7 @@ const { createDesktopLocale, applicationMenuTemplate, openCurrentDocumentDirecto
 const { createApplicationMenu } = require("./application-menu.cjs");
 const { createDocumentTransition } = require("./document-transition.cjs");
 const { setupVideoExport } = require("./video-export.cjs");
+const { setupVideoCover } = require("./video-cover.cjs");
 const { captureRasterTiles, TILE_WIDTH: EXPORT_RASTER_TILE_WIDTH, TILE_HEIGHT: EXPORT_RASTER_TILE_HEIGHT } = require("./raster-capture.cjs");
 const desktopLocale = createDesktopLocale();
 const nativeTr = desktopLocale.tr;
@@ -716,7 +717,7 @@ function showAbout() {
 }
 
 const applicationMenu = createApplicationMenu({ Menu, ipcMain, assertTrustedSender, getWindow: () => mainWindow, quit: () => app.quit(),
-  createTemplate: () => applicationMenuTemplate({ tr: nativeTr, sendDocumentCommand, showThirdPartyNotices, showAbout, hasDocument: documentActive, hasDocumentPath: Boolean(currentDocumentPath),
+  createTemplate: () => applicationMenuTemplate({ tr: nativeTr, locale: desktopLocale.get(), sendDocumentCommand, showThirdPartyNotices, showAbout, hasDocument: documentActive, hasDocumentPath: Boolean(currentDocumentPath),
     openCurrentDirectory: () => { void openCurrentDocumentDirectory({ filePath: currentDocumentPath, shell, dialog, tr: nativeTr }); },
     openTechnicalDocumentation: () => { void shell.openExternal(TECHNICAL_DOCUMENTATION_URL).catch(error => console.error(error)); },
     recentDocuments: recentDocuments.list(),
@@ -786,6 +787,7 @@ const libraryIpc = setupLibraryIpc({ ipcMain, dialog, shell, userData: app.getPa
 const desktopAudio = setupDesktopAudio({ ipcMain, dialog, userData: app.getPath("userData"), window: () => mainWindow,
   locale: () => desktopLocale.get(), assertTrustedSender, currentPath: () => currentDocumentPath, library: libraryIpc });
 const videoExport = setupVideoExport({ ipcMain, BrowserWindow, dialog, app, getWindow: () => mainWindow, assertTrustedSender, assetsRoot: desktopAssetsRoot, captureTiles: captureRasterTiles });
+setupVideoCover({ ipcMain, Menu, dialog, assertTrustedSender, getWindow: () => mainWindow, hasDocument: () => documentActive, locale: () => desktopLocale.get() });
 setupUserDataIpc({ app, ipcMain, shell, dialog, getWindow: () => mainWindow, assertTrustedSender,
   confirmDiscard: () => confirmDiscard(nativeTr("clearUserDataAction")), beforeRestart: () => { closeConfirmed = true; }, tr: nativeTr });
 ipcMain.handle("mstruct:new", newDocument);

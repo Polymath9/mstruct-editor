@@ -49,6 +49,13 @@ Runtime libraries
 
 Fonts
 -----
+- Noto Sans CJK SC 2.004 variable OTF — SIL Open Font License 1.1.
+  Copyright 2014–2021 Adobe (http://www.adobe.com/), Reserved Font Name 'Source'.
+  Used for offline video covers; redistributed unmodified.
+  File: fonts/NotoSansCJKsc-VF.otf; full license: fonts/OFL-NotoSansCJK.txt.
+  Source: https://github.com/notofonts/noto-cjk/tree/523d033d6cb47f4a80c58a35753646f5c3608a78
+  Upstream path: Sans/Variable/OTF/NotoSansCJKsc-VF.otf.
+  SHA-256: 2745e9681cb9d8a5c8901b62c9e1bd98c9c774365fc3b84dd467621013b51cd3.
 - Academico Regular and Bold — SIL Open Font License 1.1;
   local license: licenses/OFL-Academico.txt.
 - Bravura — SIL Open Font License 1.1;

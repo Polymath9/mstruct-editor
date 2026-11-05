@@ -3,11 +3,12 @@ import { createApplicationSettings } from "../ui/application-settings.js";
 import { normalizeRendererPreferences, RENDERER_PREFERENCES_STORAGE_KEY } from "../core/renderer-preferences.js";
 import { createDesktopMenu } from "../ui/desktop-menu.js";
 import { setupDesktopScoreScale } from "./desktop-score-scale.js";
+import { persistStandaloneLocale } from "../ui/language-switcher.js";
 import "../ui/application-colors.css";
 import "../ui/application-settings.css";
 import "./desktop-appearance.css";
 
-export function setupDesktopAppearance({ desktopApi, button, tr, rules, openRules, errorMessage, onPlaybackPreferencesChanged, openEditorSettings }) {
+export function setupDesktopAppearance({ desktopApi, button, tr, rules, openRules, errorMessage, onPlaybackPreferencesChanged, openEditorSettings, onLocaleChange }) {
   if (!desktopApi || !button) return null;
   const shell = document.querySelector(".editor-app");
   let colorScheme;
@@ -27,6 +28,14 @@ export function setupDesktopAppearance({ desktopApi, button, tr, rules, openRule
   setupDesktopScoreScale({ target: document.querySelector("#rendererCanvas") });
   createDesktopMenu({ api: desktopApi, label: () => tr("desktopMenuBar") });
   document.querySelector(".header-actions").append(document.querySelector("#renderButton"));
-  desktopApi.onCommand(command => { if (command === "application-settings") ui.open(); if (command === "editor-settings") openEditorSettings(); });
+  desktopApi.onCommand(command => {
+    if (command === "application-settings") ui.open();
+    if (command === "editor-settings") openEditorSettings();
+    if (command === "set-locale:zh" || command === "set-locale:en") {
+      const locale = command.slice("set-locale:".length);
+      persistStandaloneLocale(locale);
+      onLocaleChange(locale);
+    }
+  });
   return ui;
 }

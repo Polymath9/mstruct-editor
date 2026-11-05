@@ -10,6 +10,7 @@ function createApplicationMenu({ Menu, ipcMain, assertTrustedSender, getWindow, 
         const enabled = parentEnabled && item.enabled !== false;
         if (!item.submenu && item.id) nextActions.set(item.id, { ...item, enabled });
         return { id: item.id, label: item.label.replaceAll("&&", "&"), enabled, accelerator: item.accelerator ?? "",
+          ...(item.type === "radio" ? { type: "radio", checked: item.checked === true } : {}),
           ...(item.submenu ? { submenu: serialize(item.submenu, enabled) } : {}) };
       });
     }

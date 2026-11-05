@@ -29,7 +29,14 @@ export function createDesktopMenu({ api, label }) {
       if (item.type === "separator") { row.className = "desktop-menu-separator"; row.setAttribute("role", "separator"); list.append(row); continue; }
       row.className = "desktop-menu-row"; row.setAttribute("role", "none");
       const button = document.createElement("button"), text = document.createElement("span");
-      button.type = "button"; button.setAttribute("role", "menuitem"); button.disabled = item.enabled === false; text.textContent = item.label; button.append(text); row.append(button);
+      button.type = "button"; button.setAttribute("role", item.type === "radio" ? "menuitemradio" : "menuitem"); button.disabled = item.enabled === false; text.textContent = item.label; button.append(text); row.append(button);
+      if (item.type === "radio") {
+        button.setAttribute("aria-checked", String(item.checked));
+        const check = document.createElement("span");
+        check.textContent = item.checked ? "✓" : "";
+        check.setAttribute("aria-hidden", "true");
+        button.append(check);
+      }
       if (item.submenu) {
         row.classList.add("desktop-menu-branch"); row.dataset.disabled = String(button.disabled);
         button.setAttribute("aria-haspopup", "menu");
@@ -50,6 +57,16 @@ export function createDesktopMenu({ api, label }) {
     for (const [index, item] of state.menus.entries()) {
       const group = document.createElement("div"), button = document.createElement("button"), dropdown = panel(item.submenu ?? []);
       group.className = "desktop-menu-group"; button.className = "desktop-menu-top"; button.type = "button"; button.textContent = item.label;
+      group.dataset.menuId = item.id;
+      if (item.id === "language") {
+        const globe = document.createElement("span");
+        globe.textContent = "🌐︎";
+        globe.setAttribute("aria-hidden", "true");
+        button.replaceChildren(globe);
+        button.classList.add("desktop-menu-language");
+        button.setAttribute("aria-label", item.label);
+        button.title = item.label;
+      }
       button.dataset.menuId = item.id; button.setAttribute("role", "menuitem"); button.setAttribute("aria-haspopup", "menu"); button.setAttribute("aria-expanded", "false"); dropdown.hidden = true;
       button.addEventListener("pointerdown", () => { if (!bar.contains(document.activeElement)) previousFocus = document.activeElement; });
       button.addEventListener("click", () => { if (openIndex === index) close(); else open(index); });

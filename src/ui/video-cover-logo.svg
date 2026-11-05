@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" color="#252529">
+  <!-- Original MStruct brand geometry from the user-specified covers-v1 master. -->
+  <g transform="translate(-131.04761904761904 -131.04761904761904) scale(6.0476190476190474)" fill="currentColor"><g transform="translate(9 0)">
+    <path d="M35 66H19V106H35V99H26V73H35ZM78 66H94V106H78V99H87V73H78Z"/>
+    <ellipse cx="55" cy="85" rx="17" ry="10.5" transform="rotate(-24 55 85)"/>
+    <path d="M64 22H71C73 28 80 30 84 35C89 43 86 51 80 56C84 48 83 42 78 39C75 37 72 36 71 34V83H64Z"/>
+  </g></g>
+</svg>

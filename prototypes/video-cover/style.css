@@ -1,0 +1,26 @@
+:root { color-scheme: light; font-family: "Segoe UI", "Microsoft YaHei", sans-serif; color: #2c3039; background: #f5f6f8; font-size: 14px; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+button, input, textarea, summary { font: inherit; }
+button { border: 1px solid #d7dce4; border-radius: 7px; padding: 9px 14px; background: #fff; color: inherit; cursor: pointer; }
+button:hover { background: #edf1f6; }
+button:disabled { opacity: .45; cursor: default; }
+button:focus-visible, summary:focus-visible, img:focus-visible { outline: 3px solid #7297c9; outline-offset: 3px; }
+button.primary { background: #284d78; color: white; border-color: #284d78; }
+button.primary:hover { background: #203f63; }
+header { height: 62px; display: flex; align-items: center; gap: 12px; padding: 0 25px; background: white; border-bottom: 1px solid #e1e4e9; }
+.badge { color: #738096; background: #f0f3f7; border-radius: 4px; font-size: 11px; padding: 3px 7px; }
+.language { margin-left: auto; border: 0; }
+details { position: relative; margin-left: 20px; }
+summary { cursor: pointer; list-style: none; padding: 10px; }
+nav { position: absolute; z-index: 2; top: 40px; left: 0; width: 310px; background: white; padding: 6px; border: 1px solid #dce0e7; border-radius: 8px; box-shadow: 0 10px 35px #28344720; }
+nav button { width: 100%; text-align: left; border: 0; }
+hr { border: 0; border-top: 1px solid #e4e7ed; margin: 5px; }
+main { min-height: calc(100vh - 110px); display: grid; align-content: center; text-align: center; padding: 60px; }
+h1 { font-size: 28px; font-weight: 600; margin: 25px auto 14px; max-width: 850px; overflow-wrap: anywhere; }
+p { color: #79818e; line-height: 1.65; }
+.eyebrow { color: #69819c; font-size: 13px; }
+code { color: #8a929e; }
+.actions { display: flex; gap: 10px; justify-content: center; margin-top: 28px; }
+footer { text-align: center; color: #9199a6; font-size: 12px; }
+[hidden] { display: none !important; }

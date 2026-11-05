@@ -12,7 +12,7 @@ function fixture() {
   const controller = applicationMenuModule.createApplicationMenu({
     Menu: { buildFromTemplate(template) { builds++; return template; }, setApplicationMenu() { installed++; } },
     ipcMain: { handle: (channel, action) => handlers.set(channel, action) }, assertTrustedSender: event => { if (!event?.trusted) throw Error("Untrusted sender"); },
-    getWindow: () => window, quit: () => quit++, createTemplate: () => applicationUi.applicationMenuTemplate({ tr: locale.tr, hasDocument: active, hasDocumentPath: hasPath, openCurrentDirectory: () => commands.push("folder"), sendDocumentCommand: command => commands.push(command), showAbout: () => commands.push("about"), openTechnicalDocumentation: () => commands.push(applicationUi.TECHNICAL_DOCUMENTATION_URL) }),
+    getWindow: () => window, quit: () => quit++, createTemplate: () => applicationUi.applicationMenuTemplate({ tr: locale.tr, locale: locale.get(), hasDocument: active, hasDocumentPath: hasPath, openCurrentDirectory: () => commands.push("folder"), sendDocumentCommand: command => commands.push(command), showAbout: () => commands.push("about"), openTechnicalDocumentation: () => commands.push(applicationUi.TECHNICAL_DOCUMENTATION_URL) }),
   });
   return { controller, commands, roles, changes, handlers, locale, active(value, saved = false) { active = value; hasPath = saved; controller.refresh(); }, counts: () => ({ builds, installed, quit }) };
 }
@@ -38,7 +38,12 @@ test("repeated unchanged menu refreshes do not rebuild native menus or emit stat
   for (let i = 0; i < 100; i++) f.controller.refresh();
   assert.deepEqual(f.counts(), { builds: 1, installed: 1, quit: 0 }); assert.equal(f.changes.length, 1);
   f.locale.set("en"); f.controller.refresh();
-  assert.deepEqual(f.controller.snapshot().menus.map(menu => menu.label), ["File", "Edit", "View", "Settings", "Help"]);
+  assert.deepEqual(f.controller.snapshot().menus.map(menu => menu.label), ["File", "Edit", "View", "Settings", "Help", "Language"]);
+  const language = f.controller.snapshot().menus.at(-1);
+  assert.equal(language.id, "language");
+  assert.deepEqual(language.submenu.map(item => [item.label, item.type, item.checked]), [["中文", "radio", false], ["English", "radio", true]]);
+  assert.equal(f.controller.invoke("set-locale:zh"), true);
+  assert.deepEqual(f.commands, ["set-locale:zh"]);
   assert.equal(f.controller.snapshot().revision, 2); assert.equal(f.counts().builds, 2);
 });
 
@@ -104,7 +109,8 @@ test("current folder is isolated above Return and disabled until saved", () => {
   for (const locale of ["zh", "en"]) {
     f.locale.set(locale); f.active(true, true);
     const items = file(), index = items.findIndex(item => item.id === "open-current-directory");
-    assert.equal(items[index - 1].type, "separator");
+    assert.equal(items[index - 1].id, "video-cover");
+    assert.equal(items[index - 2].type, "separator");
     assert.equal(items[index + 1].type, "separator");
     assert.equal(items[index + 2].id, "return-library");
     assert.equal(items[index].label, locale === "zh" ? "在浏览器中打开当前文件夹" : "Open Current Folder in File Explorer");
