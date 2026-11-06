@@ -25,6 +25,13 @@
 .duration-note-sequence { display: inline-flex; align-items: flex-start; justify-content: center; gap: .18em; }
 .duration-note { position: relative; display: inline-flex; align-items: flex-end; min-block-size: 2.6em; padding-block-end: .55em; white-space: nowrap; }
 .duration-note-glyph { font: 400 2.2em/1 "Bravura Duration"; }
+.has-down-stem .duration-note-glyph { position: relative; }
+.duration-note-stem-up { visibility: hidden; }
+/* A shared baseline keeps every notehead below the Roman row. Bravura's
+   longest down flag (1.064 font em) still fits the existing .55em foot room.
+   The original glyph reserves the width and the note's height stays fixed. */
+.duration-note-stem-down { position: absolute; inset: 0; translate: 0 -.32em; }
+.has-down-stem .duration-note-dots { translate: 0 -1.704em; }
 .duration-note-dots { display: inline-flex; align-items: center; align-self: flex-end; gap: 4px; block-size: 0; min-block-size: 0; margin-inline-start: .25em; translate: 0 -1em; }
 .duration-note-dot { display: block; flex: 0 0 4px; block-size: 4px; border-radius: 50%; background: currentColor; }
 .duration-note-tuplet { position: absolute; inset-block-end: 0; inset-inline-start: 50%; translate: -50% 25%; font: 400 1.75em/1 "Bravura Duration"; white-space: nowrap; }

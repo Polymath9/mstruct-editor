@@ -656,6 +656,7 @@ test("全局播放延迟默认负 30 毫秒，并与曲目及临时 offset 按�
     renderMode: "camel",
     sharp9AsFlat10: true,
     durationDisplayMode: "note",
+    durationStemDown: false,
     globalPlaybackOffset: -30,
   });
   assert.equal(normalizeRendererPreferences({ globalPlaybackOffset: -45 }).globalPlaybackOffset, -45);

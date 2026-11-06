@@ -10,7 +10,7 @@ function tupletGlyphs(value) {
   return [...String(value)].map((digit) => String.fromCodePoint(0xE880 + Number(digit))).join("");
 }
 
-export function makeDurationNotes(value, fraction, makeElement, ariaLabel) {
+export function makeDurationNotes(value, fraction, makeElement, ariaLabel, stemDown = false) {
   const displayed = describeDuration(value, fraction);
   if (displayed.kind === "fraction") return null;
 
@@ -21,7 +21,16 @@ export function makeDurationNotes(value, fraction, makeElement, ariaLabel) {
   sequence.setAttribute("aria-hidden", "true");
   for (const note of displayed.notes) {
     const symbol = makeElement("span", "duration-note");
-    symbol.append(makeElement("span", "duration-note-glyph", String.fromCodePoint(NOTE_GLYPHS.get(note.denominator))));
+    const codePoint = NOTE_GLYPHS.get(note.denominator);
+    const glyph = makeElement("span", "duration-note-glyph", String.fromCodePoint(codePoint));
+    if (stemDown) {
+      symbol.classList.add("has-down-stem");
+      glyph.textContent = "";
+      // Keep the original advance, including the space occupied by up flags.
+      glyph.append(makeElement("span", "duration-note-stem-up", String.fromCodePoint(codePoint)));
+      glyph.append(makeElement("span", "duration-note-stem-down", String.fromCodePoint(note.denominator === 1 ? codePoint : codePoint + 1)));
+    }
+    symbol.append(glyph);
     if (note.dots) {
       const dots = makeElement("span", "duration-note-dots");
       for (let index = 0; index < note.dots; index += 1) {
@@ -37,10 +46,10 @@ export function makeDurationNotes(value, fraction, makeElement, ariaLabel) {
   return label;
 }
 
-export function makeDurationLabel(slot, mode, makeElement, tr) {
+export function makeDurationLabel(slot, mode, makeElement, tr, stemDown = false) {
   const fraction = slotDurationLabel(slot);
   const notes = mode === "note"
-    ? makeDurationNotes(slot.duration, fraction, makeElement, tr("durationAria", { duration: fraction }))
+    ? makeDurationNotes(slot.duration, fraction, makeElement, tr("durationAria", { duration: fraction }), stemDown)
     : null;
   if (notes) {
     notes.classList.add("duration-label");

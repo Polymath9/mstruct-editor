@@ -1,5 +1,6 @@
 @import "../public/source-syntax.css";
 @import "./ui/renderer-nav-layout.css";
+@import "./ui/switch-disabled.css";
 
 :root {
   --ink: #19221f;

@@ -19,6 +19,7 @@ export function normalizeRendererPreferences(value) {
       ? value.sharp9AsFlat10
       : DEFAULT_NOTE_NAME_SPECIALS.includes("sharp9_as_flat10"),
     durationDisplayMode: value?.durationDisplayMode === "fraction" ? "fraction" : "note",
+    durationStemDown: value?.durationStemDown === true,
     globalPlaybackOffset: Number.isSafeInteger(value?.globalPlaybackOffset)
       ? value.globalPlaybackOffset
       : DEFAULT_GLOBAL_PLAYBACK_OFFSET,

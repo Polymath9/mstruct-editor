@@ -19,6 +19,7 @@ export function setupRendererSettings({ getPreferences, updatePreferences, getTr
   const minorTonicSix = document.querySelector("#rendererMinorTonicSix");
   const durationDisplayMode = document.querySelector("#rendererDurationDisplayMode");
   const durationControl = document.querySelector("#rendererDurationControl");
+  const durationStemDown = document.querySelector("#rendererDurationStemDown");
   const scale = document.querySelector("#rendererScale");
   const scaleValue = document.querySelector("#rendererScaleValue");
   const globalPlaybackOffset = document.querySelector("#rendererGlobalPlaybackOffset");
@@ -49,6 +50,8 @@ export function setupRendererSettings({ getPreferences, updatePreferences, getTr
     minorTonicSix.disabled = !preferences.chordDegrees;
     durationDisplayMode.checked = preferences.durationDisplayMode === "fraction";
     durationControl.dataset.mode = preferences.durationDisplayMode;
+    durationStemDown.checked = preferences.durationStemDown;
+    durationStemDown.disabled = preferences.durationDisplayMode !== "note";
     scale.value = String(getScale());
     scale.disabled = !canScale();
     scaleValue.value = `${getScale()}%`;
@@ -92,7 +95,9 @@ export function setupRendererSettings({ getPreferences, updatePreferences, getTr
     const mode = durationDisplayMode.checked ? "fraction" : "note";
     durationControl.dataset.mode = mode;
     changePreferences({ ...getPreferences(), durationDisplayMode: mode });
+    reflectPreferences();
   });
+  durationStemDown.addEventListener("change", () => changePreferences({ ...getPreferences(), durationStemDown: durationStemDown.checked }));
   scale.addEventListener("input", () => {
     if (!canScale()) return;
     updateScale(Number(scale.value));

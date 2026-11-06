@@ -341,7 +341,8 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
       if (slot.events.some((event) => event.chord || event.symbol)
         || (slot.tags ?? []).some((tag) => tagIsVisible(tag, layers))
         || (layers.comments && (slot.comments?.length ?? 0) > 0)) {
-        slotElement.append(makeDurationLabel(slot, getChordPreferences().durationDisplayMode, makeElement, tr));
+        const preferences = getChordPreferences();
+        slotElement.append(makeDurationLabel(slot, preferences.durationDisplayMode, makeElement, tr, preferences.durationStemDown));
       }
       if (layers.comments && (slot.commentActive || (slot.comments?.length ?? 0) > 0)) slotElement.append(renderCommentStack(slot));
       if (tagLaneMap.size > 0) slotElement.append(renderTagStack(slot, tagLaneMap));

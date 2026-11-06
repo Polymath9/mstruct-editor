@@ -1,0 +1,27 @@
+/* Shared by every editor/website dialog and settings surface. Higher
+   specificity than checked/hover rules keeps disabled switches neutral. */
+:is(.renderer-setting-toggle-row, .chord-setting-toggle-row, .editor-setting-row, .setting-row, label):has(:is(input[type="checkbox"], [role="switch"]):disabled) {
+  cursor: default;
+  color: #858585;
+}
+:is(.renderer-setting-toggle-row, .chord-setting-toggle-row, .editor-setting-row, .setting-row, label):has(:is(input[type="checkbox"], [role="switch"]):disabled) :is(h3, .switch-state-label, .chord-duration-choice, .renderer-duration-choice) {
+  color: #858585;
+}
+:is(input.renderer-setting-checkbox, input.chord-setting-checkbox):disabled + :is(.renderer-setting-switch, .chord-setting-switch),
+:is(button.binary-switch, button.toggle, button[role="switch"]):is(:disabled, [aria-disabled="true"]) {
+  cursor: default;
+  background: #dedede;
+  border-color: #c9c9c9;
+  opacity: 1;
+  box-shadow: none;
+}
+:is(input.renderer-setting-checkbox, input.chord-setting-checkbox):disabled + :is(.renderer-setting-switch, .chord-setting-switch) > span,
+:is(button.binary-switch, button.toggle, button[role="switch"]):is(:disabled, [aria-disabled="true"]) > :is(span, .binary-switch-knob) {
+  background: #a5a5a5;
+  box-shadow: none;
+}
+:is(dialog, [role="dialog"]) input[type="checkbox"]:disabled {
+  cursor: default;
+  filter: grayscale(1);
+  opacity: .5;
+}

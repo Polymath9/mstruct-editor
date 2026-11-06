@@ -1,0 +1,16 @@
+METADATA:
+{MSTRUCT_FORMAT_VERSION}1
+{MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
+{MSTRUCT_PROFILE_HASH}sha256:4cc19eaa4d4b5f9e0674ee66b048482a2025c996f6c35e71f57d3c768b893881
+{SONG_NAME}符杠翻转与四行数字低音 / Flipped Stems and Four-row Figured Bass
+{VERSION_NAME}Renderer Test
+{IS_STABLE_TEMPO}False
+{OFFSET}0
+END_METADATA
+
+MAIN:
+{BN:1}{TS:adlib}{TC:C}{D:1/2}G9|V[9,7,5,3-x],{D:1/4}G9|V[9,7,5,3-x],{D:1/8}G9|V[9,7,5,3-x],{D:1/16}G9|V[9,7,5,3-x],{D:1/32}G9|V[9,7,5,3-x],{D:1/64}G9|V[9,7,5,3-x];{LB}
+{D:3/8}G9|V[9,7,5,3-x],{D:7/16}G9|V[9,7,5,3-x],{D:15/32}G9|V[9,7,5,3-x];{LB}
+{D:2/3}G9|V[9,7,5,3-x],{D:11/16}G9|V[9,7,5,3-x],{D:31/32}G9|V[9,7,5,3-x],{D:1/128}G9|V[9,7,5,3-x];{LB}
+{D:1}G9|V[9,7,5,3-x],{D:1/8}X,0,-,N.C.,Clus,ClusWK,ClusBK;
+END_MAIN
