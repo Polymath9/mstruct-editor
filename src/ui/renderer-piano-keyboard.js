@@ -136,10 +136,10 @@ export function createRendererPianoKeyboard({ panel, canvas, nav, player, getPre
     }
     const information = playbackEntryInformation(entry, getPreferences());
     const active = new Set(information.midiNotes);
-    const invalid = information.midiNotes.some(note => !isPlayableMidi(note) || !isPlayableMidi(pianoKeyMidi(note, getPreferences())));
+    const invalid = information.pianoRangeError || information.midiNotes.some(note => !isPlayableMidi(note) || !isPlayableMidi(pianoKeyMidi(note, getPreferences())));
     root.setAttribute("aria-label", tr("rendererLayerPianoKeyboard"));
     status.hidden = !invalid && !audioFailed;
-    status.textContent = invalid ? tr("pianoKeyboardRangeError") : audioFailed ? tr("pianoKeyboardAudioError") : "";
+    status.textContent = information.pianoRangeError ? tr("chordPianoRangeError") : invalid ? tr("pianoKeyboardRangeError") : audioFailed ? tr("pianoKeyboardAudioError") : "";
     for (const button of buttons) {
       const midi = Number(button.dataset.midi);
       button.classList.toggle("is-active", active.has(midi));
@@ -209,7 +209,7 @@ export function createRendererPianoKeyboard({ panel, canvas, nav, player, getPre
       attemptedScrollElement = null; pendingHostScroll = false;
       documentNotes = [];
       for (const measure of result?.measures ?? []) for (const slot of measure.slots) for (const event of slot.events) {
-        if (event.chordResult?.structure) documentNotes.push(...event.chordResult.structure.toMidiNotes());
+        if (event.chordResult?.structure) documentNotes.push(...event.chordResult.structure.toPianoVoicing().midiNotes);
       }
       rangeSignature = ""; buildKeys(); update(null);
     },

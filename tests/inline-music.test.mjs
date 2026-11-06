@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { parseRomanConfigCsv, parseRomanSymbol } from "../src/core/roman-symbol.js";
 import { parseSpecialChordCsv, parseChordSymbol } from "../src/core/chord-symbol.js";
 import { inlineMusicModel, inlineMusicSource, parseInlineMusicText } from "../src/core/inline-music.js";
-import { chordSymbolModel, romanSymbolModel } from "../src/core/symbol-render-model.js";
+import { chordSymbolModel, clusterSymbolModel, romanSymbolModel } from "../src/core/symbol-render-model.js";
 import { renderInlineMusicText } from "../src/ui/inline-music.js";
 import { createCommentPopover } from "../src/ui/comment-popover.js";
 
@@ -12,6 +12,20 @@ const csv = (name) => readFile(new URL(`../src/config/${name}.csv`, import.meta.
 const [special, basicCsv, advancedCsv, figuredBassCsv, specialCsv] = await Promise.all([csv("special-chords"), csv("roman-basic"), csv("roman-advanced"), csv("roman-figured-bass"), csv("roman-special")]);
 const options = { specialChords: parseSpecialChordCsv(special), romanConfig: parseRomanConfigCsv({ basicCsv, advancedCsv, figuredBassCsv, specialCsv }), renderMode: "camel" };
 const find = (model, className) => typeof model === "string" ? [] : [...(model.className.split(" ").includes(className) ? [model] : []), ...model.children.flatMap((child) => find(child, className))];
+
+test("cluster symbols share static normal and superscript suffix rendering", () => {
+  for (const mode of ["normal", "camel", "superscript"]) for (const symbol of ["Clus", "ClusWK", "ClusBK"]) {
+    const model = clusterSymbolModel(symbol, mode);
+    assert.equal(model.tag, "span");
+    assert.equal(model.children[0], "Clus");
+    assert.equal(model.children.length, symbol === "Clus" ? 1 : 2);
+    if (symbol !== "Clus") {
+      assert.equal(model.children[1].className, mode === "normal" ? "cluster-suffix" : "score-chord-sup");
+      assert.equal(model.children[1].children[0], symbol.slice(4));
+    }
+  }
+  assert.equal(clusterSymbolModel("Clus7", "normal"), null);
+});
 
 test("diminished o uses the same superscript class and literal glyph as Roman, even in normal chord mode", () => {
   const model = chordSymbolModel(parseChordSymbol("Cdim7", options), "normal", { diminishedDisplay: "o" });

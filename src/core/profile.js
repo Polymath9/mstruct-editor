@@ -43,7 +43,7 @@ function normalizeFiles(input, descriptors) {
  */
 
 /** Content manifest is immutable. Release notes, lifecycle and defaults live outside it. */
-export async function createMstructProfile({ profileId, files: input, formatVersion = MSTRUCT_FORMAT_VERSION, manifestVersion = PROFILE_MANIFEST_VERSION }) {
+export async function createMstructProfile({ profileId, files: input, formatVersion = MSTRUCT_FORMAT_VERSION, manifestVersion = Object.hasOwn(input ?? {}, "global_settings.csv") ? PROFILE_MANIFEST_VERSION : 2 }) {
   const { namespace, version } = parseProfileId(profileId);
   if (formatVersion !== MSTRUCT_FORMAT_VERSION) {
     throw new MstructProfileError("format-version-unsupported", { version: String(formatVersion) });
@@ -77,7 +77,7 @@ export async function createMstructProfile({ profileId, files: input, formatVers
  */
 export async function verifyMstructProfile(input, identity = null) {
   const manifest = input?.manifest;
-  if (!manifest || ![1, PROFILE_MANIFEST_VERSION].includes(manifest.manifestVersion)) {
+  if (!manifest || ![1, 2, PROFILE_MANIFEST_VERSION].includes(manifest.manifestVersion)) {
     throw new MstructProfileError("profile-manifest-unsupported");
   }
   const profile = await createMstructProfile({

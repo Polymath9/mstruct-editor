@@ -182,13 +182,13 @@ test("MStructTime LOOP restores form state for every timed visit", () => {
   assert.deepEqual(plan.entries.map(entry => tokens(playbackEntryInformation(entry).activeTags)), [["<A:one>"],["<A:two>"],["<A:one>"],["<A:two>"],["<A:two>"],["<A:two>"]]);
 });
 
-test("twelve-table v2 source bundle and historical v1 snapshot both verify exactly", async () => {
+test("thirteen-table v3 source bundle and historical v1 snapshot both verify exactly", async () => {
   const files = Object.fromEntries(await Promise.all(PROFILE_FILES.map(async ({ name }) => [name, await readFile(new URL(`../src/config/${name}`, import.meta.url), "utf8")])));
   const profile = await createMstructProfile({ profileId: "org.mstruct.official/rulesets/1.0.0", files });
-  assert.equal(profile.manifest.manifestVersion, 2);
-  assert.equal(profile.manifest.files.length, 12);
+  assert.equal(profile.manifest.manifestVersion, 3);
+  assert.equal(profile.manifest.files.length, 13);
   assert.equal((await verifyMstructProfile(profile)).manifest.bundleHash, profile.manifest.bundleHash);
-  const legacyFiles = { ...files }; delete legacyFiles["form-tags.csv"];
+  const legacyFiles = { ...files }; delete legacyFiles["form-tags.csv"]; delete legacyFiles["global_settings.csv"];
   legacyFiles["tags.csv"] += parseTagCsvRows(files["form-tags.csv"]).slice(1).map(row => row.slice(0, 4).join(",")).join("\n") + "\n";
   legacyFiles["toolbox-events.csv"] = files["toolbox-events.csv"].split("\n").filter(line => !line.startsWith("</FORM_END")).join("\n");
   const historical = await createMstructProfile({ profileId: profile.manifest.profileId, manifestVersion: 1, files: legacyFiles });

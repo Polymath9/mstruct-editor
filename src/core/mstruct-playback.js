@@ -54,7 +54,8 @@ function playbackMidiNotes(slot) {
   const event = slot?.events?.find((candidate) => candidate.chordResult?.structure);
   if (!event) return null;
   try {
-    return event.chordResult.structure.toMidiNotes();
+    const { midiNotes } = event.chordResult.structure.toPianoVoicing();
+    return midiNotes.length ? midiNotes : null;
   } catch {
     return null;
   }

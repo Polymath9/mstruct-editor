@@ -687,7 +687,7 @@ export function parseMstruct(input, options = {}) {
         }
         const event = parseEvent(token, source, errors);
         if (event) {
-          compileEventChord(event, source, errors, options.specialChords);
+          compileEventChord(event, source, errors, options.specialChords, options.globalSettings);
           applyEvent({ event, state, measure, slot, source, errors, romanConfig: options.romanConfig });
         }
         continue;
@@ -732,7 +732,7 @@ export function parseMstruct(input, options = {}) {
         index = closingQuote + 1;
         const event = parseSecondaryEvent(token, source, errors);
         if (event) {
-          compileEventChord(event, source, errors, options.specialChords);
+          compileEventChord(event, source, errors, options.specialChords, options.globalSettings);
           applyEvent({ event, state, measure, slot, source, errors, romanConfig: options.romanConfig });
         }
         continue;
@@ -755,7 +755,7 @@ export function parseMstruct(input, options = {}) {
       index = token.end;
       const event = parseShorthandEvent(token, source, errors);
       if (event) {
-        compileEventChord(event, source, errors, options.specialChords);
+        compileEventChord(event, source, errors, options.specialChords, options.globalSettings);
         applyEvent({ event, state, measure, slot, source, errors, romanConfig: options.romanConfig });
       }
     }

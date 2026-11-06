@@ -1,6 +1,7 @@
 import { tonalPitchClass } from "./mstruct-harmony.js";
 import { parseBpmValue } from "./mstruct-tempo.js";
 import { romanFigureSearchViews } from "./mstruct-search-roman.js";
+import { CLUSTER_SYMBOLS } from "./cluster-symbol.js";
 
 export const MSTRUCT_SEARCH_INDEX_FORMAT_VERSION = 12;
 
@@ -41,6 +42,7 @@ export function activeMstructSearchTags(event, globalTags = []) {
 }
 
 function chordAlternative(source, result) {
+  if (CLUSTER_SYMBOLS.has(source)) return { source, atoms: [source] };
   if (!source || !result) return null;
   const atoms = result.searchAtoms ?? result.atoms ?? [source];
   const root = result.search?.notes?.[0]?.token
@@ -71,7 +73,7 @@ function romanAlternative(source, result, tonalCenter = null, chain = null, head
 }
 
 function chordField(event) {
-  if (event.chordSymbolType) return { type: event.chordSymbolType, alternatives: [] };
+  if (event.chordSymbolType && !CLUSTER_SYMBOLS.has(event.chord)) return { type: event.chordSymbolType, alternatives: [] };
   const alternatives = [
     chordAlternative(event.chord, event.chordResult),
     chordAlternative(event.chordAnnotation, event.chordAnnotationResult),

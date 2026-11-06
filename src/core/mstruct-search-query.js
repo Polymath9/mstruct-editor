@@ -1,4 +1,5 @@
 import { parseChordSymbol } from "./chord-symbol.js";
+import { CLUSTER_SYMBOLS } from "./cluster-symbol.js";
 import { parseRomanInAnyMode, validateExactSearchTagSource } from "./semantic-tags.js";
 import { validateExactHarmonySearchSource } from "./mstruct-search-source.js";
 import { parseTonalReference } from "./tonal-reference.js";
@@ -20,9 +21,7 @@ const SEARCHABLE_SPECIAL_EVENTS = new Map([
   ["X", "placeholder"],
   ["0", "rest"],
   ["N.C.", "no-chord"],
-  ["Clus", "cluster"],
-  ["ClusWK", "white-key-cluster"],
-  ["ClusBK", "black-key-cluster"],
+  ...[...CLUSTER_SYMBOLS].map(([symbol, { type }]) => [symbol, type]),
 ]);
 
 function diagnostic(code, start, end, details = {}) {
@@ -198,7 +197,7 @@ function parseTagConstraint(content, start, options, errors, constraintOptions =
 
 function compileConcreteField(domain, source, options) {
   if (domain === "chord") {
-    const result = parseChordSymbol(source, { specialChords: options.specialChords });
+    const result = parseChordSymbol(source, { specialChords: options.specialChords, globalSettings: options.globalSettings });
     return result.searchAtoms ?? result.atoms;
   }
   return parseRomanInAnyMode(romanFigureValidationSource(source), options.romanConfig).atoms;
@@ -350,6 +349,7 @@ function parseFieldPatternBase(raw, domain, start, options, errors) {
     return null;
   }
   if (value === "X") return { kind: "placeholder", source: value };
+  if (domain === "chord" && CLUSTER_SYMBOLS.has(value)) return { kind: "source", source: value };
   const wildcardCount = [...value].filter((character) => ["*", "?"].includes(character)).length;
   if (wildcardCount > MSTRUCT_SEARCH_QUERY_LIMITS.wildcardsPerField) {
     errors.push(diagnostic("search-field-pattern-too-complex", start, start + value.length, { domain }));
@@ -376,7 +376,7 @@ function parseFieldPatternBase(raw, domain, start, options, errors) {
         };
       }
       try {
-        const result = parseChordSymbol(relative.source, { specialChords: options.specialChords });
+        const result = parseChordSymbol(relative.source, { specialChords: options.specialChords, globalSettings: options.globalSettings });
         const atoms = [...(result.searchAtoms ?? result.atoms)].map((atom) => ({ kind: "literal", value: atom }));
         for (const entry of relative.relatives) {
           const note = result.search?.notes?.[entry.noteIndex];

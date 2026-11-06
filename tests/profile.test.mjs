@@ -19,6 +19,23 @@ const files = Object.fromEntries(await Promise.all(PROFILE_FILES.map(async ({ na
   await readFile(new URL(`../src/config/${name}`, import.meta.url), "utf8")])));
 const create = (changes = {}, profileId = INITIAL_PROFILE_ID) => createMstructProfile({ profileId, files: { ...files, ...changes } });
 const builtin = await create();
+test("global settings are hashed, validated and applied to exact profile compilation", async () => {
+  const limited = await create({ "global_settings.csv": "key,value\npolychord_lower_max_notes,3\n" });
+  const source = serializeMstructDocument({ metadata: createEmptyMetadata(), main: "{BN:1}{TS:adlib}{D:1}CM7onDm7|;" });
+  assert.equal((await assignDocumentProfile(source, limited)).ok, false);
+  assert.equal((await assignDocumentProfile(source, builtin)).ok, true);
+  assert.equal((await compareMstructProfiles(limited, builtin)).semanticLevel, "minor");
+  assert.equal((await compareMstructProfiles(builtin, limited)).semanticLevel, "major");
+  for (const csv of ["key,value\npolychord_lower_max_notes,5\n", "key,value\nunknown,4\n", "key,value\n"]) {
+    await assert.rejects(create({ "global_settings.csv": csv }));
+  }
+  const { ["global_settings.csv"]: ignored, ...legacyFiles } = files;
+  const legacy = await createMstructProfile({ profileId: INITIAL_PROFILE_ID, files: legacyFiles, manifestVersion: 2 });
+  assert.equal(legacy.manifest.files.length, 12);
+  assert.equal((await verifyMstructProfile(legacy)).manifest.bundleHash, legacy.manifest.bundleHash);
+  assert.equal((await compareMstructProfiles(legacy, limited)).semanticCompatible, false);
+  assert.equal((await compareMstructProfiles(legacy, builtin)).semanticCompatible, true);
+});
 const oldSource = serializeMstructDocument({ metadata: createEmptyMetadata(), main: "{BN:1}{TS:adlib}{D:1}[C:C];" });
 const assigned = await assignDocumentProfile(oldSource, builtin, "0.1.32");
 const errorCode = (code) => (error) => error.code === code;
@@ -156,12 +173,12 @@ test("migration reports compare semantic projections and playback without rewrit
   assert.equal(invalid.ok, false); assert.equal(invalid.source, undefined);
 });
 
-test("twelve-table content identity ignores BOM/line endings/extra trailing LF, but retains data order", async () => {
+test("thirteen-table content identity ignores BOM/line endings/extra trailing LF, but retains data order", async () => {
   const normalized = await createMstructProfile({ profileId: INITIAL_PROFILE_ID,
     files: Object.fromEntries(Object.entries(files).map(([name, content], index) => [name,
       `\uFEFF${content.replace(/\r\n?/g, "\n").replace(/\n/g, index % 2 ? "\r" : "\r\n")}\n\n`])) });
   assert.deepEqual(normalized, builtin);
-  assert.equal(builtin.manifest.files.length, 12);
+  assert.equal(builtin.manifest.files.length, 13);
   for (const file of builtin.manifest.files) {
     assert.equal(file.size, Buffer.byteLength(builtin.files[file.name], "utf8"));
     assert.equal(file.hash, `sha256:${createHash("sha256").update(builtin.files[file.name]).digest("hex")}`);
@@ -289,7 +306,7 @@ test("display-only edits are patch, pure additions minor, changed duration/struc
     const next = await create(changes);
     const diff = await compareMstructProfiles(builtin, next);
     assert.equal(diff.level, level);
-    assert.equal(diff.tables.length, 12);
+    assert.equal(diff.tables.length, 13);
     assert.equal(diff.semanticLevel, level);
     assert.equal(diff.authoringLevel, "none");
     assert.equal(diff.suggestedVersion, { patch: "1.0.0", minor: "1.0.0", major: "2.0.0" }[level]);

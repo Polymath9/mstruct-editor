@@ -24,6 +24,16 @@ const config = parseRomanConfigCsv({ basicCsv, advancedCsv, figuredBassCsv, spec
 const specialChords = parseSpecialChordCsv(chordCsv);
 const parse = (source, tonalMode = "M", chainContext = null) => parseRomanSymbol(source, { config, tonalMode, chainContext });
 
+test("altered tonics work in both modes and inherit tonic advanced admissions", () => {
+  for (const mode of ["M", "m"]) for (const token of ["bI", "bi", "#I", "#i"]) {
+    const result = parse(token, mode);
+    assert.ok(result.structure, `${token}/${mode}`);
+    const base = config.basics.get(token);
+    assert.equal(base.tonalMode, "");
+    assert.deepEqual(base.allowedAdvanced, config.basics.get(token.endsWith("i") ? "i" : "I").allowedAdvanced);
+  }
+});
+
 test("Roman validation compares bass pitch classes and recognizes seventh figures", () => {
   const check = (body, center = "C") => {
     const result = parseMstruct(`{BN:1}{TS:1/4}{D:1/4}{TC:${center}}${body};`, { specialChords, romanConfig: config });
@@ -293,7 +303,7 @@ test("Roman warnings keep exact ranges in ordinary, annotated and dual-Roman eve
 });
 
 test("validates editable Roman CSV tables as one cross-referenced configuration", () => {
-  assert.equal(config.basics.size, 30);
+  assert.equal(config.basics.size, 34);
   assert.equal(config.advanced.size, 7);
   assert.equal(config.figuredBass.size, 10);
   assert.equal(config.specials.size, 22);

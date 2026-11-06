@@ -29,7 +29,7 @@ async function migrationWrites(root, payload) {
   }
   const directory = `.rules/${profile.manifest.bundleHash.slice(7)}`;
   for (const [name, text] of Object.entries({ ...profile.files, "manifest.json": JSON.stringify(profile.manifest) })) {
-    if (!/^(?:[a-z][a-z0-9-]*\.csv|manifest\.json)$/.test(name) || typeof text !== "string") throw Error("library-rules");
+    if (!/^(?:[a-z][a-z0-9_-]*\.csv|manifest\.json)$/.test(name) || typeof text !== "string") throw Error("library-rules");
     const relative = `${directory}/${name}`;
     const old = await readOptional(await safePath(root, relative, { internal: true }));
     assertMatchingRuleFile(name, old, text);

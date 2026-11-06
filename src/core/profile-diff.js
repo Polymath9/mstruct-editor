@@ -7,7 +7,7 @@ function maximum(...levels) { return LEVELS[Math.max(...levels.map((level) => LE
 
 export function isRomanAdmissionExpansion(name, before, after) {
   const field = name === "roman-basic.csv" ? "allowedAdvanced"
-    : name === "roman-advanced.csv" ? "allowedFiguredBass" : null;
+    : name === "roman-advanced.csv" ? "allowedFiguredBass" : name === "global_settings.csv" ? "values" : null;
   if (!field || !Array.isArray(before[field]) || !Array.isArray(after[field])) return false;
   const { [field]: previousValues, ...previousDefinition } = before;
   const { [field]: nextValues, ...nextDefinition } = after;
@@ -37,6 +37,9 @@ export async function compareMstructProfiles(beforeInput, afterInput) {
   const [before, after] = await Promise.all([verifyMstructProfile(beforeInput), verifyMstructProfile(afterInput)]);
   const previous = profileCompatibilityDefinitions(parseProfileConfig(before.files));
   const next = profileCompatibilityDefinitions(parseProfileConfig(after.files));
+  // Historical bundles used the compiler's four-note limit before this setting
+  // became an explicit CSV row. Compatibility compares that effective value.
+  for (const definitions of [previous, next]) definitions.semantic["global_settings.csv"] ??= { polychord_lower_max_notes: { values: [3, 4] } };
   const tables = PROFILE_FILES.map(({ name, layer }) => ({ name, layer,
     ...tableDiff(name, previous[layer][name] ?? {}, next[layer][name] ?? {}, before.files[name] !== after.files[name]),
   }));

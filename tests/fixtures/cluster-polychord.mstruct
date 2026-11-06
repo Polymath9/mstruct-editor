@@ -1,0 +1,17 @@
+METADATA:
+{MSTRUCT_FORMAT_VERSION}1
+{MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
+{MSTRUCT_PROFILE_HASH}sha256:751637279628bf6816ddb1892455066b5006801d274ed4abc2957c798f8c9cc2
+{SONG_NAME}音块字段与四音下层 / Cluster Fields and Four-note Lower Chords
+{VERSION_NAME}Renderer Test
+{IS_STABLE_TEMPO}True
+{OFFSET}0
+END_METADATA
+
+MAIN:
+{BN:1}{TS:adlib}{TC:C}{BPM:1/4=100}{D:1/4}Clus,ClusWK,ClusBK;{LB}
+[C:Clus|R:I],ClusWK|IV,[C:ClusBK|R:V],'ClusWK|I';{LB}
+Fm7add(b2,4,b6)\\Clus|,[C:C\\ClusWK],[C:ClusBK\\C],'[C:Clus\\ClusWK]';{LB}
+CM7onDm7|,C/GonF7/A|,ConF/G|;{LB}
+G/BbonB[nf:(0,1,2,35)]|;
+END_MAIN

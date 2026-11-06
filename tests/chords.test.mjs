@@ -10,10 +10,55 @@ import {
   toMusicGlyphs,
 } from "../src/core/chord-symbol.js";
 import { normalizeChordQualityPreferences } from "../src/core/chord-quality-display.js";
+import { chordNotesForStaff } from "../src/core/chord-staff.js";
 
 const csv = await readFile(new URL("../src/config/special-chords.csv", import.meta.url), "utf8");
 const specialChords = parseSpecialChordCsv(csv);
 const parse = (source) => parseChordSymbol(source, { specialChords });
+
+test("polychord lower size comes from the supplied rule settings", () => {
+  for (const maximum of [3, 4]) {
+    const options = { specialChords, globalSettings: { polychordLowerMaxNotes: maximum } };
+    assert.equal(parseChordSymbol("CM7onDm", options).structure.polychordLowerNoteCount, 3);
+    if (maximum === 4) assert.equal(parseChordSymbol("CM7onDm7", options).structure.polychordLowerNoteCount, 4);
+    else assert.throws(() => parseChordSymbol("CM7onDm7", options), error => error.code === "polychord-note-count" && error.details.maximum === 3);
+  }
+});
+
+test("polychords accept three or four lower notes and anchor above the actual lower structure", () => {
+  for (const [source, count, midi] of [
+    ["CM7onDm", 3, [50,53,57,60,64,67,71]],
+    ["CM7onDm7", 4, [38,41,45,48,60,64,67,71]],
+    ["C/GonF7/A", 4, [33,41,48,51,55,60,64]],
+    ["C/EonF7", 4, [41,45,48,51,52,60,67]],
+    ["ConF/G", 4, [31,41,45,48,60,64,67]],
+  ]) {
+    const structure = parse(source).structure;
+    assert.equal(structure.polychordLowerNoteCount, count, source);
+    assert.deepEqual(structure.toMidiNotes(), midi, source);
+    assert.deepEqual(structure.clone().toMidiNotes(), midi, source);
+    assert.equal(chordNotesForStaff(structure.toNoteNames(), midi).length, midi.length);
+  }
+  for (const source of ["ConC5", "ConC9", "ConC7/F#"]) {
+    assert.throws(() => parse(source), error => error.code === "polychord-note-count", source);
+  }
+});
+
+test("piano voicing shifts the entire polychord by octaves or reports an unfit range", () => {
+  const structure = parse("G/BbonB[nf:(0,1,2,35)]").structure;
+  const raw = structure.toMidiNotes();
+  const voicing = structure.toPianoVoicing();
+  assert.deepEqual(raw, [-1,0,1,34,46,55,59,62]);
+  assert.deepEqual(voicing, { midiNotes: raw.map(note => note + 24), octaveShift: 2, rangeError: false });
+  assert.equal(chordNotesForStaff(structure.toNoteNames(), voicing.midiNotes).length, raw.length);
+  assert.deepEqual(parse("CM7onDm7").structure.toPianoVoicing().midiNotes, parse("CM7onDm7").structure.toMidiNotes());
+  const high = new IntervalStructure(["1","36"], "C").toPolychord(new IntervalStructure(["1","3","5","b7"], "C"));
+  assert.equal(high.toPianoVoicing().octaveShift, -1);
+  assert.ok(high.toPianoVoicing().midiNotes.every(note => note >= 21 && note <= 108));
+  const wide = new IntervalStructure(["1","57"], "C").toPolychord(new IntervalStructure(["1","3","5","b7"], "C"));
+  assert.deepEqual(wide.toPianoVoicing(), { midiNotes: [], octaveShift: 0, rangeError: true });
+  assert.equal(wide.toNoteNames().length, 6);
+});
 
 test("quality display preferences normalize old, missing and unsupported values to the current defaults", () => {
   const defaults = { diminishedDisplay: "dim", augmentedDisplay: "aug", majorSeventhDisplay: "M", minorDisplay: "m" };

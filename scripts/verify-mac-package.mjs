@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile, mkdtemp, stat } from "node:fs/promises";
 import { execFile, spawn } from "node:child_process";
 import { promisify } from "node:util";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import encoding from "../desktop/video-encoding.cjs";
 
@@ -22,6 +22,12 @@ const executableName = (await run("plutil", ["-extract", "CFBundleExecutable", "
 const executable = path.join(bundle, "Contents/MacOS", executableName);
 const machoArch = process.arch === "x64" ? "x86_64" : "arm64";
 assert.equal((await run("lipo", ["-archs", executable])).stdout.trim(), machoArch);
+const distributed = await import(pathToFileURL(path.join(bundle, "Contents/Resources/renderer/profile.js")).href);
+const expectedProfile = JSON.parse(await readFile(path.join(root, "src/config/official-profile.json"), "utf8"));
+const packagedProfile = await distributed.getEmbeddedMstructProfile();
+assert.deepEqual(packagedProfile, expectedProfile, "Packaged rule tables differ from the released source snapshot.");
+assert.ok(packagedProfile.files["global_settings.csv"], "Packaged global settings are missing.");
+console.log(`Packaged rules verified: ${packagedProfile.manifest.files.length} tables, ${packagedProfile.manifest.bundleHash}.`);
 await run(executable, ["--smoke-test"], { timeout: 60000, env: { ...process.env,
   MSTRUCT_SMOKE_USER_DATA: path.join(scratch, "user-data"), MSTRUCT_SMOKE_LOG: path.join(scratch, "smoke.log") } });
 const ffmpeg = path.join(bundle, "Contents/Resources/desktop-assets/video-encoder/bin/ffmpeg");

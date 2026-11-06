@@ -17,13 +17,14 @@ export function createEditorConfig({
   let romanConfig = parseRomanConfigCsv(currentRomanCsv);
   let tagConfig = parseTagConfigCsv(tagCsv);
   let formTagConfig = null;
+  let globalSettings;
   let currentSemanticCsv = { ...semanticTagConfigCsv };
   let semanticTagConfig = parseSemanticTagConfigCsv(currentSemanticCsv, { romanConfig });
   let searchVocabulary = null;
 
   return {
     compileMain(source, metadata, comments) {
-      const config = { specialChords, romanConfig, tagConfig, semanticTagConfig, formTagConfig };
+      const config = { specialChords, romanConfig, tagConfig, semanticTagConfig, formTagConfig, globalSettings };
       const global = parseGlobalTagList(metadata.globalTags, config);
       const result = parseMstruct(source, { ...config, isStableTempo: metadata.isStableTempo, comments, globalTags: global.tags });
       return { ...result, ok: result.ok && global.ok,
@@ -31,6 +32,7 @@ export function createEditorConfig({
     },
     applyProfile(config) {
       searchVocabulary = null;
+      globalSettings = config.globalSettings;
       specialChords = config.specialChords;
       romanConfig = config.romanConfig;
       tagConfig = config.tagConfig;
@@ -42,8 +44,9 @@ export function createEditorConfig({
       const family = families?.find((item) => item.identities.some(([id, hash]) => id === identity?.mstructProfileId && hash === identity?.mstructProfileHash));
       searchVocabulary = family?.config ?? null;
     },
-    get searchOptions() { return searchVocabulary ?? { specialChords, romanConfig, tagConfig, semanticTagConfig, formTagConfig }; },
+    get searchOptions() { return searchVocabulary ?? { specialChords, romanConfig, tagConfig, semanticTagConfig, formTagConfig, globalSettings }; },
     get specialChords() { return specialChords; },
+    get globalSettings() { return globalSettings; },
     get romanConfig() { return romanConfig; },
     get tagConfig() { return tagConfig; },
     get formTagConfig() { return formTagConfig; },

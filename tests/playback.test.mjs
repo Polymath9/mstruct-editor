@@ -14,6 +14,27 @@ import { playbackEntryInformation } from "../src/core/mstruct-playback-info.js";
 import { createRendererPlayback } from "../src/ui/renderer-playback.js";
 import { ChordPianoPlayer } from "../src/core/chord-audio.js";
 
+test("cluster fields stop piano sustain and polychord preview uses the same octave placement as information", () => {
+  const result = parseMstruct("{BN:1}{TS:4/4}{D:1}{BPM:1/4=60}C|;ClusWK|;-;G/BbonB[nf:(0,1,2,35)]|;", { isStableTempo: true });
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  const entries = buildPlaybackPlan(result).entries;
+  assert.equal(entries[0].pianoEndMs, entries[0].endMs);
+  assert.equal(entries[1].midiNotes, null);
+  assert.equal(entries[2].midiNotes, null);
+  assert.deepEqual(entries[3].midiNotes, [23,24,25,58,70,79,83,86]);
+  assert.deepEqual(playbackEntryInformation(entries[3]).midiNotes, entries[3].midiNotes);
+});
+
+test("cluster annotations preserve main-chord playback and annotated cluster mains remain silent", () => {
+  const separator = String.fromCharCode(92).repeat(2);
+  const result = parseMstruct(`{BN:1}{TS:4/4}{D:1}{BPM:1/4=60}Fm7add(b2,4,b6)${separator}Clus|;Clus${separator}C|;`);
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  const entries = buildPlaybackPlan(result).entries;
+  assert.equal(entries[0].midiNotes.length, 7);
+  assert.deepEqual(playbackEntryInformation(entries[0]).midiNotes, entries[0].midiNotes);
+  assert.equal(entries[1].midiNotes, null);
+});
+
 test("manual piano voices coexist with preview voices and pending notes respect cancellation", async () => {
   const player = new ChordPianoPlayer();
   const started = [], stopped = [];

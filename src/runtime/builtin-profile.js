@@ -5,6 +5,7 @@ import romanFiguredBass from "../config/roman-figured-bass.csv?raw";
 import romanSpecial from "../config/roman-special.csv?raw";
 import tags from "../config/tags.csv?raw";
 import formTags from "../config/form-tags.csv?raw";
+import globalSettings from "../config/global_settings.csv?raw";
 import cadenceTags from "../config/cadence-tags.csv?raw";
 import tonalTags from "../config/tonal-tags.csv?raw";
 import sequenceTags from "../config/sequence-tags.csv?raw";
@@ -14,6 +15,7 @@ import { createMstructProfile } from "../core/profile.js";
 import { INITIAL_PROFILE_ID } from "../core/profile-schema.js";
 
 export const BUILTIN_PROFILE_FILES = Object.freeze({
+  "global_settings.csv": globalSettings,
   "special-chords.csv": specialChords, "roman-basic.csv": romanBasic,
   "roman-advanced.csv": romanAdvanced, "roman-figured-bass.csv": romanFiguredBass,
   "roman-special.csv": romanSpecial, "tags.csv": tags, "cadence-tags.csv": cadenceTags,

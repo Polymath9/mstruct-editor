@@ -4,6 +4,7 @@ import { parseRomanBasicReference, RomanSyntaxError, parseRomanSymbol } from "./
 import { STANDALONE_EVENT_TYPES, splitAnnotationField, splitTopLevel, trimFieldPart } from "./mstruct-syntax.js";
 import { tonalReferenceMode as tonalMode, tonalReferencePitchClass } from "./tonal-reference.js";
 import { collectRomanValidationWarnings } from "./roman-validation.js";
+import { CLUSTER_SYMBOLS } from "./cluster-symbol.js";
 
 export function tonalPitchClass(value) {
   return tonalReferencePitchClass(value);
@@ -330,9 +331,9 @@ export function applyHardModulationEvent(event, state, measure, source, errors, 
   if (!measure.tonalCenter) measure.tonalCenter = state.tonalCenter;
 }
 
-function compileChordValue(value, start, source, errors, specialChords) {
+function compileChordValue(value, start, source, errors, specialChords, globalSettings) {
   try {
-    return parseChordSymbol(value, { specialChords });
+    return parseChordSymbol(value, { specialChords, globalSettings });
   } catch (error) {
     const relativeStart = error instanceof ChordSyntaxError ? error.start : 0;
     const relativeEnd = error instanceof ChordSyntaxError ? error.end : value.length;
@@ -352,23 +353,26 @@ function compileChordValue(value, start, source, errors, specialChords) {
   }
 }
 
-export function compileEventChord(event, source, errors, specialChords) {
+export function compileEventChord(event, source, errors, specialChords, globalSettings) {
   if (!event.chord || event.chordSymbolType) return;
   const field = splitAnnotationField(event.chord, event.chordStart ?? event.start, source, errors, "chord");
   if (!field) return;
   event.chord = field.main.content;
   event.chordStart = field.main.start;
   event.chordEnd = field.main.end;
-  event.chordResult = compileChordValue(event.chord, event.chordStart, source, errors, specialChords);
+  event.chordSymbolType = CLUSTER_SYMBOLS.get(event.chord)?.type ?? null;
+  event.chordResult = event.chordSymbolType ? null : compileChordValue(event.chord, event.chordStart, source, errors, specialChords, globalSettings);
   if (!field.annotation) return;
   event.chordAnnotation = field.annotation.content;
   event.chordAnnotationStart = field.annotation.start;
   event.chordAnnotationEnd = field.annotation.end;
-  event.chordAnnotationResult = compileChordValue(
+  event.chordAnnotationSymbolType = CLUSTER_SYMBOLS.get(event.chordAnnotation)?.type ?? null;
+  event.chordAnnotationResult = event.chordAnnotationSymbolType ? null : compileChordValue(
     event.chordAnnotation,
     event.chordAnnotationStart,
     source,
     errors,
     specialChords,
+    globalSettings,
   );
 }

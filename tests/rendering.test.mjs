@@ -487,8 +487,8 @@ test("独立事件固定对齐第一行，Roman 字段延长符对齐第二行",
 });
 
 test("音簇、速度轨与文档标题使用各自的非交互渲染结构", () => {
-  assert.match(rendererSource, /\["cluster", "white-key-cluster", "black-key-cluster"\]/);
-  assert.match(rendererSource, /getChordPreferences\(\)\.renderMode === "normal" \? "cluster-suffix" : "score-chord-sup"/);
+  assert.match(scoreSource, /clusterSymbolModel\(event\.symbol, getChordPreferences\(\)\.renderMode\)/);
+  assert.match(symbolSource, /clusterSymbolModel\(target\.chord, getChordPreferences\(\)\.renderMode\)/);
   assert.match(stylesheet, /\.cluster-symbol\s*\{[^}]*font-family:\s*"MStruct Text Accidentals", "Academico"/s);
   assert.match(rendererSource, /const tempoBpmStack = makeElement\("div", `tempo-bpm-stack/);
   assert.doesNotMatch(rendererSource, /has-time-label/);

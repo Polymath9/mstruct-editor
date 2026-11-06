@@ -2,6 +2,7 @@ import { makeError } from "./mstruct-diagnostics.js";
 import { parseFraction } from "./mstruct-rational.js";
 import { parseBpmValue, parseMetricModulationValue } from "./mstruct-tempo.js";
 import { parseTonalReference } from "./tonal-reference.js";
+import { CLUSTER_SYMBOLS } from "./cluster-symbol.js";
 
 const SETTING_TYPES = new Set(["BN", "T", "BPM", "BPMHIDDEN", "MM", "TEMPO", "TS", "TC", "D", "M", "MH"]);
 const EVENT_TYPES = new Set(["C", "R"]);
@@ -11,9 +12,7 @@ export const STANDALONE_EVENT_TYPES = new Map([
   ["0", "rest"],
   ["-", "continuation"],
   ["N.C.", "no-chord"],
-  ["Clus", "cluster"],
-  ["ClusWK", "white-key-cluster"],
-  ["ClusBK", "black-key-cluster"],
+  ...[...CLUSTER_SYMBOLS].map(([symbol, { type }]) => [symbol, type]),
 ]);
 export const FIELD_EVENT_TYPES = new Map([
   ["X", "placeholder"],
@@ -21,7 +20,7 @@ export const FIELD_EVENT_TYPES = new Map([
 ]);
 
 function assignFieldEventTypes(event) {
-  event.chordSymbolType = FIELD_EVENT_TYPES.get(event.chord) ?? null;
+  event.chordSymbolType = FIELD_EVENT_TYPES.get(event.chord) ?? CLUSTER_SYMBOLS.get(event.chord)?.type ?? null;
   event.romanSymbolType = FIELD_EVENT_TYPES.get(event.roman) ?? null;
   return event;
 }
@@ -395,8 +394,9 @@ export function parseSecondaryEvent(token, source, errors) {
       end: contentStart + content.length,
     }, source, errors);
   }
-  if (!event || event.symbol || event.chordSymbolType || event.romanSymbolType || (!event.chord && !event.roman)) {
-    if (event?.symbol || event?.chordSymbolType || event?.romanSymbolType) makeError(errors, source, "invalid-secondary-event", token.start, token.end);
+  const hasFieldMarker = event && (FIELD_EVENT_TYPES.has(event.chord) || FIELD_EVENT_TYPES.has(event.roman));
+  if (!event || event.symbol || hasFieldMarker || (!event.chord && !event.roman)) {
+    if (event?.symbol || hasFieldMarker) makeError(errors, source, "invalid-secondary-event", token.start, token.end);
     return null;
   }
   event.secondary = true;

@@ -50,7 +50,7 @@ export function inlineMusicModel(part, options = {}) {
   try {
     if (part.error) throw new Error(part.error);
     const result = part.kind === "chord"
-      ? parseChordSymbol(part.source, { specialChords: options.specialChords })
+      ? parseChordSymbol(part.source, { specialChords: options.specialChords, globalSettings: options.globalSettings })
       : parseRomanSymbol(part.source, { config: options.romanConfig, tonalMode: part.tonalMode });
     const symbol = part.kind === "chord" ? chordSymbolModel(result, options.renderMode, options.preferences) : romanSymbolModel(result);
     return { ok: true, model: { tag: "span", className: `mstruct-inline mstruct-inline-${part.kind}`, attrs: { "aria-label": part.source }, children: [symbol] } };

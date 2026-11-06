@@ -1,6 +1,10 @@
 roman,degree,quality,tonal_mode,allowed_advanced
 I,1,M,,"+,DM"
 i,1,m,,"o,ho,oM,M"
+bI,b1,M,,"+,DM"
+bi,b1,m,,"o,ho,oM,M"
+#I,#1,M,,"+,DM"
+#i,#1,m,,"o,ho,oM,M"
 bII,b2,M,,
 bii,b2,m,,M
 II,2,M,,DM

@@ -41,7 +41,8 @@ export function createProfileSearchVocabulary(builds) {
     definitionsByFamily.set(semanticFamily, definitions);
     const previous = families.get(semanticFamily) ?? { semanticFamily, identities: [], config: {} };
     previous.identities.push([profile.manifest.profileId, profile.manifest.bundleHash]);
-    previous.config = unionValue(previous.config, { specialChords, romanConfig, tagConfig, semanticTagConfig, ...(formTagConfig ? { formTagConfig } : {}) });
+    const maximumLowerNotes = Math.max(previous.config.globalSettings?.polychordLowerMaxNotes ?? 0, config.globalSettings?.polychordLowerMaxNotes ?? 4);
+    previous.config = unionValue(previous.config, { globalSettings: { polychordLowerMaxNotes: maximumLowerNotes }, specialChords, romanConfig, tagConfig, semanticTagConfig, ...(formTagConfig ? { formTagConfig } : {}) });
     families.set(semanticFamily, previous);
   }
   return [...families.values()];

@@ -276,6 +276,10 @@ export function createRendererFullscreen({
   async function drawStaff(information) {
     const generation = ++staffGeneration;
     staff.replaceChildren();
+    if (information.pianoRangeError) {
+      staff.textContent = tr("chordPianoRangeError");
+      return;
+    }
     if (!information.noteNames.length || !information.midiNotes.length) return;
     staff.setAttribute("aria-label", tr("chordStaffAria", {
       notes: information.noteNames.map(toMusicGlyphs).join(", "),

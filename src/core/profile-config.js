@@ -6,6 +6,7 @@ import { parseSemanticTagConfigCsv, resolveSemanticTagToken } from "./semantic-t
 import { parseToolboxConfigCsv } from "./toolbox-config.js";
 import { MstructProfileError } from "./profile-schema.js";
 import { validateProfileToolbox } from "./profile-toolbox.js";
+import { parseGlobalSettingsCsv } from "./global-settings.js";
 
 /** Each caller receives its own compiler Maps; none are stored in the bundle. */
 export function parseProfileConfig(files) {
@@ -24,7 +25,8 @@ export function parseProfileConfig(files) {
     const toolboxConfig = parseToolboxConfigCsv({
       menuCsv: files["toolbox-menus.csv"], eventCsv: files["toolbox-events.csv"],
     });
-    const config = { specialChords, romanConfig, tagConfig, semanticTagConfig, toolboxConfig, ...(formTagConfig ? { formTagConfig } : {}) };
+    const globalSettings = files["global_settings.csv"] === undefined ? null : parseGlobalSettingsCsv(files["global_settings.csv"]);
+    const config = { specialChords, romanConfig, tagConfig, semanticTagConfig, toolboxConfig, ...(globalSettings ? { globalSettings } : {}), ...(formTagConfig ? { formTagConfig } : {}) };
     for (const tag of [...tagConfig.tags, ...(formTagConfig?.tags ?? [])]) {
       const inner = tag.token.slice(1, -1);
       if ((formTagConfig?.byToken.has(tag.token) && tagConfig.byToken.has(tag.token))
@@ -62,6 +64,7 @@ function definitions(entries, key, makeDefinition = semanticDefinition) {
 export function profileCompatibilityDefinitions(config) {
   const { romanConfig: roman, semanticTagConfig: semantic, toolboxConfig: toolbox } = config;
   const semanticTables = {
+    ...(config.globalSettings ? { "global_settings.csv": { polychord_lower_max_notes: { values: Array.from({ length: config.globalSettings.polychordLowerMaxNotes - 2 }, (_, index) => index + 3) } } } : {}),
     "special-chords.csv": definitions(config.specialChords.values(), "compilerName"),
     "roman-basic.csv": definitions(roman.basics.values(), "roman"),
     "roman-advanced.csv": definitions(roman.advanced.values(), "token"),

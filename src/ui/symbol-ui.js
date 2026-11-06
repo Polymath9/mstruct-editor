@@ -3,7 +3,7 @@ import { toMusicGlyphs } from "../core/chord-symbol.js";
 import { drawChordStaff } from "../core/chord-staff.js";
 import { formatAccidentals } from "../core/mstruct.js";
 import { romanDisplayGlyphs } from "../core/roman-symbol.js";
-import { chordSymbolModel, romanSymbolModel } from "../core/symbol-render-model.js";
+import { chordSymbolModel, clusterSymbolModel, romanSymbolModel } from "../core/symbol-render-model.js";
 import { symbolModelDom } from "./symbol-dom.js";
 import { displayNoteName, chordEventTonalCenter } from "../core/note-display.js";
 import { tr as defaultTr } from "../editor-i18n.js";
@@ -104,6 +104,13 @@ export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopo
     const current = currentChordPopover;
     if (!current) return;
     const generation = ++chordStaffGeneration;
+    chordPopoverStaff.replaceChildren();
+    chordPopoverStaffError.textContent = tr(current.pianoRangeError ? "chordPianoRangeError" : "chordStaffFailed");
+    if (current.pianoRangeError) {
+      chordPopoverStaff.removeAttribute("aria-busy");
+      chordPopoverStaffError.hidden = false;
+      return;
+    }
     chordPopoverStaffError.hidden = true;
     chordPopoverStaff.setAttribute("aria-busy", "true");
     try {
@@ -127,9 +134,10 @@ export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopo
     if (noteNameSpecial) noteNameSpecials.push(noteNameSpecial);
     const preferences = getChordPreferences();
     const noteNames = result.structure.toNoteNames(noteNameSpecials).map(note => transposeNoteName(note, preferences));
-    const midiNotes = transposeMidiNotes(result.structure.toMidiNotes(), preferences);
-    const audioMidiNotes = transposeMidiNotes(result.structure.toMidiNotes(), preferences, { audio: true });
-    currentChordPopover = { result, target, noteNames, midiNotes, audioMidiNotes };
+    const voicing = result.structure.toPianoVoicing();
+    const midiNotes = transposeMidiNotes(voicing.midiNotes, preferences);
+    const audioMidiNotes = transposeMidiNotes(voicing.midiNotes, preferences, { audio: true });
+    currentChordPopover = { result, target, noteNames, midiNotes, audioMidiNotes, pianoRangeError: voicing.rangeError };
     target.setAttribute("aria-expanded", "true");
     chordPopoverSymbol.replaceChildren(makeChordSymbol(result, center));
     chordPopoverIntervals.textContent = `[${result.structure.values.map(toMusicGlyphs).join(", ")}]`;
@@ -141,7 +149,7 @@ export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopo
     chordPopoverNoteNames.append(document.createTextNode("]"));
     chordPopoverStaff.setAttribute("aria-label", tr("chordStaffAria", { notes: noteNames.map(toMusicGlyphs).join(", ") }));
     chordPopoverAudioError.hidden = true;
-    chordPopoverPlay.disabled = false;
+    chordPopoverPlay.disabled = voicing.rangeError;
     chordPopoverPlay.classList.remove("is-loading");
     chordPopoverPlayLabel.textContent = tr("playChord");
     if (!chordPopover.open) chordPopover.show();
@@ -208,13 +216,15 @@ export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopo
   function appendAnnotation(valueElement, target, field, event) {
     const annotation = target[`${field}Annotation`];
     const annotationResult = target[`${field}AnnotationResult`];
-    if (!annotation || !annotationResult) return valueElement;
+    const cluster = field === "chord" && clusterSymbolModel(annotation, getChordPreferences().renderMode);
+    if (!annotation || (!annotationResult && !cluster)) return valueElement;
     const combined = makeElement("span", "event-value-with-annotation");
     const annotationElement = makeElement("span", `event-annotation ${field}-annotation`);
     const annotationTarget = field === "chord"
       ? { chord: annotation, chordResult: annotationResult }
       : { roman: annotation, romanResult: annotationResult };
-    const trigger = field === "chord" ? makeChordTrigger(annotationTarget, event.chordNoteNameSpecial, chordEventTonalCenter(event)) : makeRomanTrigger(annotationTarget);
+    const trigger = cluster ? symbolModelDom(cluster, document)
+      : field === "chord" ? makeChordTrigger(annotationTarget, event.chordNoteNameSpecial, chordEventTonalCenter(event)) : makeRomanTrigger(annotationTarget);
     trigger.classList.add("event-annotation-trigger");
     annotationElement.append(document.createTextNode("("), trigger, document.createTextNode(")"));
     combined.append(valueElement, annotationElement);
@@ -223,8 +233,11 @@ export function createSymbolUi({ makeElement, getChordPreferences, getHostedPopo
 
   function makeEventValue(target, field, event) {
     let valueElement;
+    const cluster = field === "chord" && clusterSymbolModel(target.chord, getChordPreferences().renderMode);
     if (field === "chord" && target.chordResult) {
       valueElement = makeChordTrigger(target, event.chordNoteNameSpecial, chordEventTonalCenter(event));
+    } else if (cluster) {
+      valueElement = symbolModelDom(cluster, document);
     } else if (field === "roman" && target.romanResult) {
       valueElement = makeRomanTrigger(target);
       decorateRomanEventValue(valueElement, target, event.order);

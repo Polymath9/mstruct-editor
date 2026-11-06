@@ -58,3 +58,5 @@ body.mstruct-viewer .renderer-panel[data-presentation-mode="scroll"] .renderer-c
 .renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) .is-playback-active::before { background: transparent; box-shadow: none; }
 .renderer-strip-focus { display: none; position: absolute; z-index: 5; border-radius: 4px; background: #f2cf6345; box-shadow: inset 0 0 0 1px #c5a346; pointer-events: none; }
 .renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) .renderer-strip-focus:not([hidden]) { display: block; }
+.renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) .measure.has-single-harmony-row .harmony-stack { grid-template-rows: 1fr; }
+.renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) .measure.has-single-harmony-row :is(.chord-line, .roman-line) { grid-row: 1; }

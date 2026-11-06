@@ -81,7 +81,7 @@ test("desktop packaging embeds current complete rules and updates the example fo
   const tagsFile = path.join(configDirectory, "tags.csv");
   await writeFile(tagsFile, (await readFile(tagsFile, "utf8")) + "<OfflineBuildTest>,离线构建测试,Offline Build Test,1\n");
   const result = await prepareDesktopProfile({ configDirectory, exampleFile });
-  assert.equal(result.files, 12);
+  assert.equal(result.files, 13);
   assert.equal(result.updated, true);
   const embedded = await verifyMstructProfile(JSON.parse(await readFile(path.join(configDirectory, "official-profile.json"), "utf8")));
   const offline = await resolveMstructDocument(await readFile(exampleFile, "utf8"), async () => embedded);

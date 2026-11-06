@@ -50,6 +50,14 @@ function search(projection, source) {
   return matchMstructSearchQuery(query, projection).windows;
 }
 
+test("cluster chord fields match exact, wildcard and NOT queries separately from standalone clusters", () => {
+  const projected = compile("{BN:1}{TS:adlib}{D:1}{TC:C}ClusWK,[C:ClusWK|R:I],ClusBK|V,[C:Clus],C|I;");
+  for (const [query, count] of [["ClusWK",1],["ClusWK|*",1],["[C:ClusBK|R:V]",1],["Clus|*",1],["*|I",2],["*!(ClusWK)|*",3],["(ClusWK||ClusBK)|*",2]]) {
+    assert.equal(search(projected, query).length, count, query);
+  }
+  assert.equal(search(projected, "*|ClusWK").length, 0);
+});
+
 test("DC subdominant destinations remain distinct in exact and wildcard searches", () => {
   const projected = compile("{BN:1}{TS:4/4}{D:1}{TC:C}G|V;F|IV</DC:IV>;G|V;Fm|iv</DC:iv>;");
   assert.equal(search(projected, "<DC:IV>").length, 1);
@@ -71,6 +79,14 @@ test("field NOT excludes complete chord patterns, including slash in polychord l
     ["[C:Cm*!(*/*||*on*)|R:*]", 2], ["(Cm*||Dm*)!(*/*||*on*)|*", 2],
     ["C(m||7)!(*/*||*on*)|*", 1],
   ]) assert.equal(search(projected, query).length, count, query);
+});
+
+test("cluster chord annotations participate in exact, wildcard, OR and NOT searches", () => {
+  const separator = String.fromCharCode(92).repeat(2);
+  const projected = compile(`{BN:1}{TS:adlib}{D:1}{TC:C}Fm7add(b2,4,b6)${separator}Clus|I,Clus${separator}C|I,ClusBK${separator}ClusWK|I,Clus;`);
+  for (const [query, count] of [["Clus|*", 2], ["C|*", 1], ["*|*", 3], ["(Clus||ClusWK)|*", 3], ["*!(Clus)|*", 1], ["Clus!(C)|*", 1], ["*!(ClusWK)|*", 2], ["Clus", 1]]) {
+    assert.equal(search(projected, query).length, count, query);
+  }
 });
 
 test("field NOT rejects prohibited alternatives in both directions without annotation escape", () => {

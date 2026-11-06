@@ -4,6 +4,8 @@ import { tagDisplayParts } from "../core/semantic-tags.js";
 import { makeDurationLabel } from "./duration-label.js";
 import { scoreLength } from "../core/renderer-scale.js";
 import { tagIsVisible, visibleTagLanes } from "../core/renderer-layers.js";
+import { clusterSymbolModel } from "../core/symbol-render-model.js";
+import { symbolModelDom } from "./symbol-dom.js";
 
 export function createScoreRenderer({ makeElement, appendChordNotation, appendRomanNotation, makeRomanSymbol, makeEventValue, makeBpmLabel, makeMetricModulationLabel, makeTimeSignature, getChordPreferences, getRendererLayers, getLocale, openCommentPopover, tr = defaultTr }) {
   function makeTonalLabel(tonalCenter, relation = null) {
@@ -103,15 +105,9 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
     const standaloneEvents = events.filter((event) => event.symbol);
     const group = makeElement("div", "standalone-line");
     for (const [index, event] of standaloneEvents.entries()) {
-      const valueElement = makeElement("span", "event-value");
-      if (["cluster", "white-key-cluster", "black-key-cluster"].includes(event.symbolType)) {
-        valueElement.classList.add("cluster-symbol");
-        valueElement.append(document.createTextNode("Clus"));
-        const suffix = event.symbolType === "white-key-cluster" ? "WK" : event.symbolType === "black-key-cluster" ? "BK" : "";
-        if (suffix) {
-          valueElement.append(makeElement("span", getChordPreferences().renderMode === "normal" ? "cluster-suffix" : "score-chord-sup", suffix));
-        }
-      } else {
+      const cluster = clusterSymbolModel(event.symbol, getChordPreferences().renderMode);
+      const valueElement = cluster ? symbolModelDom(cluster, document) : makeElement("span", "event-value");
+      if (!cluster) {
         valueElement.textContent = event.symbolType === "continuation" ? "—" : event.symbol;
       }
       valueElement.dataset.eventOrder = String(event.order);
@@ -259,11 +255,13 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
     const displayedSlots = segment?.slots ?? engraving.slots;
     const hasChord = displayedSlots.some((slotLayout) => slotLayout.slot.events.some((event) => event.chord));
     const hasRoman = displayedSlots.some((slotLayout) => slotLayout.slot.events.some((event) => event.roman));
+    const singleHarmonyRow = !measure.slots.some(slot => slot.events.some(event => event.romanLayers?.length === 2))
+      && measure.slots.some(slot => slot.events.some(event => event.chord)) !== measure.slots.some(slot => slot.events.some(event => event.roman));
     const hasOpeningTimeSignature = Boolean(displayedSlots[0]?.slot.timeSignature);
     const rowClass = hasRomanRows ? "two-rows" : "one-row";
     const measureElement = makeElement(
       "article",
-      `measure ${rowClass} ${startsSystem ? "system-start" : "system-continuation"}${hasOpeningTimeSignature ? " has-opening-time-signature" : ""}${measure.truncatedByEllipsis ? " is-truncated" : ""}${segment && !segment.startsMeasure ? " is-measure-continuation" : ""}`,
+      `measure ${rowClass}${singleHarmonyRow ? " has-single-harmony-row" : ""} ${startsSystem ? "system-start" : "system-continuation"}${hasOpeningTimeSignature ? " has-opening-time-signature" : ""}${measure.truncatedByEllipsis ? " is-truncated" : ""}${segment && !segment.startsMeasure ? " is-measure-continuation" : ""}`,
     );
     measureElement.setAttribute("aria-label", `${tr("measure", { count: measure.displayBarNumber ?? measure.barNumber ?? "?" })}${segment && !segment.startsMeasure ? tr("continued") : ""}`);
     const naturalWidth = segment?.naturalWidth ?? engraving.naturalWidth;

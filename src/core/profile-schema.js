@@ -1,4 +1,4 @@
-export const PROFILE_MANIFEST_VERSION = 2;
+export const PROFILE_MANIFEST_VERSION = 3;
 export const MSTRUCT_FORMAT_VERSION = 1;
 export const OFFICIAL_PROFILE_NAMESPACE = "org.mstruct.official";
 export const INITIAL_PROFILE_ID = `${OFFICIAL_PROFILE_NAMESPACE}/rulesets/1.0.0`;
@@ -11,12 +11,17 @@ export const PROFILE_FILES_V1 = Object.freeze([
   "toolbox-menus.csv", "toolbox-events.csv",
 ].map((name, index) => Object.freeze({ name, layer: index < 9 ? "semantic" : "authoring" })));
 
-export const PROFILE_FILES = Object.freeze([
+export const PROFILE_FILES_V2 = Object.freeze([
   ...PROFILE_FILES_V1.slice(0, 9), Object.freeze({ name: "form-tags.csv", layer: "semantic" }), ...PROFILE_FILES_V1.slice(9),
+]);
+
+export const PROFILE_FILES = Object.freeze([
+  ...PROFILE_FILES_V2.slice(0, 10), Object.freeze({ name: "global_settings.csv", layer: "semantic" }), ...PROFILE_FILES_V2.slice(10),
 ]);
 
 export function profileFilesForManifest(version) {
   if (version === 1) return PROFILE_FILES_V1;
+  if (version === 2) return PROFILE_FILES_V2;
   if (version === PROFILE_MANIFEST_VERSION) return PROFILE_FILES;
   throw new MstructProfileError("profile-manifest-unsupported");
 }

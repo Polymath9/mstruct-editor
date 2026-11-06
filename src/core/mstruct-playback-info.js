@@ -49,7 +49,8 @@ export function playbackEntryInformation(entry, {
   const noteNameSpecials = sharp9AsFlat10 ? ["sharp9_as_flat10"] : [];
   if (chordEvent?.chordNoteNameSpecial) noteNameSpecials.push(chordEvent.chordNoteNameSpecial);
   const noteNames = chordEvent ? chordEvent.chordResult.structure.toNoteNames(noteNameSpecials).map(note => transposeNoteName(note, preferences)) : [];
-  const midiNotes = chordEvent ? transposeMidiNotes(chordEvent.chordResult.structure.toMidiNotes(), preferences) : [];
+  const voicing = chordEvent?.chordResult.structure.toPianoVoicing();
+  const midiNotes = transposeMidiNotes(voicing?.midiNotes ?? [], preferences);
   const commentNumber = currentCommentNumber(source);
   return {
     bpm: entry?.bpm ?? null,
@@ -61,5 +62,6 @@ export function playbackEntryInformation(entry, {
     chordEvent,
     noteNames,
     midiNotes,
+    pianoRangeError: voicing?.rangeError ?? false,
   };
 }

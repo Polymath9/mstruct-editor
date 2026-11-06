@@ -568,6 +568,53 @@ test("Clus、ClusWK 与 ClusBK 解析为不可点击的独立音簇事件", () =
   );
 });
 
+test("clusters are complete chord fields, with Roman and secondary harmony kept separate", () => {
+  for (const [symbol, type] of [["Clus", "cluster"], ["ClusWK", "white-key-cluster"], ["ClusBK", "black-key-cluster"]]) {
+    for (const source of [`[C:${symbol}]`, `${symbol}|`, `[C:${symbol}|R:I]`, `${symbol}|I`, `'${symbol}|I'`]) {
+      const parsed = parseMstruct(`{BN:1}{TS:adlib}{D:1/4}{TC:C}${source};`, { specialChords, romanConfig });
+      assert.equal(parsed.ok, true, `${source}: ${JSON.stringify(parsed.errors)}`);
+      const event = parsed.measures[0].slots[0].events[0];
+      assert.equal(event.chordSymbolType, type);
+      assert.equal(event.chordResult, null);
+      assert.equal(event.symbol, null);
+      assert.equal(Boolean(event.romanResult), source.includes("I"));
+      assert.equal(Boolean(event.secondary), source.startsWith("'"));
+    }
+    for (const source of [`[R:${symbol}]`, `C|${symbol}`, `${symbol}7|I`, `${symbol}/C|I`, `C${symbol}|I`]) {
+      assert.equal(parseMstruct(`{BN:1}{TS:adlib}{D:1}{TC:C}${source};`, { specialChords, romanConfig }).ok, false, source);
+    }
+    assert.equal(parseMstruct(`{BN:1}{TS:adlib}{D:1}C|,[NR:P]${symbol}|;`).ok, false);
+  }
+});
+
+test("cluster symbols can occupy either side of a chord annotation", () => {
+  const separator = String.fromCharCode(92).repeat(2);
+  const chord = "Fm7add(b2,4,b6)";
+  for (const cluster of ["Clus", "ClusWK", "ClusBK"]) {
+    for (const [main, annotation] of [[chord, cluster], [cluster, chord], [cluster, "ClusWK"]]) {
+      const field = `${main}${separator}${annotation}`;
+      for (const value of [`${field}|`, `[C:${field}]`, `${field}|I`, `'${field}|I'`]) {
+        const source = `{BN:1}{TS:adlib}{D:1}{TC:C}${value};`;
+        const result = parseMstruct(source, { specialChords, romanConfig });
+        assert.equal(result.ok, true, `${value}: ${JSON.stringify(result.errors)}`);
+        const event = result.measures[0].slots[0].events[0];
+        assert.equal(event.chord, main);
+        assert.equal(event.chordAnnotation, annotation);
+        assert.equal(Boolean(event.chordResult), main === chord);
+        assert.equal(Boolean(event.chordAnnotationResult), annotation === chord);
+        assert.equal(Boolean(event.chordSymbolType), main !== chord);
+        assert.equal(Boolean(event.chordAnnotationSymbolType), annotation !== chord);
+        assert.equal(source.slice(event.chordStart, event.chordEnd), main);
+        assert.equal(source.slice(event.chordAnnotationStart, event.chordAnnotationEnd), annotation);
+      }
+    }
+  }
+  for (const field of [`C${separator}X`, `X${separator}Clus`, `C${separator}Clus7`, `Clus${separator}`, `Clus${separator}C${separator}ClusWK`]) {
+    assert.equal(parseMstruct(`{BN:1}{TS:adlib}{D:1}[C:${field}];`, { specialChords }).ok, false, field);
+  }
+  assert.equal(parseMstruct(`{BN:1}{TS:adlib}{D:1}{TC:C}C|I${separator}Clus;`, { specialChords, romanConfig }).ok, false);
+});
+
 test("NR 接受规定变换并绑定前一个和弦或紧邻的延长符", () => {
   for (const value of ["P", "L", "R", "LP", "PLRPLR", "N", "S", "H"]) {
     const result = parseMstruct(`{BN:1}{TS:adlib}{D:1}C|,[NR:${value}]Cm|;`);

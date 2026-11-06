@@ -165,6 +165,7 @@ export class IntervalStructure {
     this.root = root;
     this.isSlashChord = Boolean(options.isSlashChord);
     this.isPolychord = Boolean(options.isPolychord);
+    this.polychordLowerNoteCount = options.polychordLowerNoteCount ?? (this.isPolychord ? 3 : 0);
     this.sourceHasSeventh = options.sourceHasSeventh;
     this.items = intervals.map((item) => typeof item === "string" ? makeItem(item, "manual") : cloneItem(item));
     this.sort();
@@ -179,7 +180,7 @@ export class IntervalStructure {
   }
 
   clone() {
-    return new IntervalStructure(this.items, this.root, { isSlashChord: this.isSlashChord, isPolychord: this.isPolychord, sourceHasSeventh: this.sourceHasSeventh });
+    return new IntervalStructure(this.items, this.root, { isSlashChord: this.isSlashChord, isPolychord: this.isPolychord, polychordLowerNoteCount: this.polychordLowerNoteCount, sourceHasSeventh: this.sourceHasSeventh });
   }
 
   sort() {
@@ -293,13 +294,13 @@ export class IntervalStructure {
     return this;
   }
 
-  toPolychord(lowerChord, sourceSpan = { start: 0, end: 1 }) {
+  toPolychord(lowerChord, sourceSpan = { start: 0, end: 1 }, maximumLowerNotes = 4) {
     if (!(lowerChord instanceof IntervalStructure)) throw new TypeError("The lower chord must be an IntervalStructure.");
     if (this.isPolychord || lowerChord.isPolychord) {
       throw new ChordSyntaxError("polychord-nested", sourceSpan.start, sourceSpan.end, {}, "Nested polychords are not supported.");
     }
-    if (lowerChord.items.length !== 3) {
-      throw new ChordSyntaxError("polychord-three-notes", sourceSpan.start, sourceSpan.end, { count: lowerChord.items.length }, "The lower chord must contain exactly three notes.");
+    if (lowerChord.items.length < 3 || lowerChord.items.length > maximumLowerNotes) {
+      throw new ChordSyntaxError("polychord-note-count", sourceSpan.start, sourceSpan.end, { count: lowerChord.items.length, maximum: maximumLowerNotes }, `The lower chord must contain 3–${maximumLowerNotes} notes.`);
     }
 
     const baseDegree = shiftedRootDegree(lowerChord.root, this.root);
@@ -317,17 +318,28 @@ export class IntervalStructure {
     this.items = [...lowerChord.items.map(cloneItem), ...upperItems];
     this.root = lowerChord.root;
     this.isPolychord = true;
+    this.polychordLowerNoteCount = lowerChord.items.length;
     this.sort();
     return this;
   }
 
   toMidiNotes() {
-    const anchorIndex = this.isPolychord ? (this.isSlashChord ? 4 : 3) : (this.isSlashChord ? 1 : 0);
+    const anchorIndex = (this.isPolychord ? this.polychordLowerNoteCount : 0) + (this.isSlashChord ? 1 : 0);
     const anchor = this.items[anchorIndex];
     if (!anchor) throw new Error("The interval structure does not contain its MIDI anchor.");
     const anchorPitch = modulo(rootPitchClass(this.root) + intervalSemitones(anchor), 12);
     const anchorMidi = Array.from({ length: 12 }, (_, index) => 55 + index).find((value) => modulo(value, 12) === anchorPitch);
     return this.items.map((item) => anchorMidi + intervalSemitones(item) - intervalSemitones(anchor));
+  }
+
+  toPianoVoicing() {
+    const notes = this.toMidiNotes();
+    if (!this.isPolychord) return { midiNotes: notes, octaveShift: 0, rangeError: false };
+    const lowestShift = Math.ceil((21 - Math.min(...notes)) / 12);
+    const highestShift = Math.floor((108 - Math.max(...notes)) / 12);
+    if (lowestShift > highestShift) return { midiNotes: [], octaveShift: 0, rangeError: true };
+    const octaveShift = Math.max(lowestShift, Math.min(0, highestShift));
+    return { midiNotes: notes.map(note => note + 12 * octaveShift), octaveShift, rangeError: false };
   }
 }
 
@@ -398,10 +410,11 @@ function addSegment(segments, text, role, start, end, notation = false) {
 }
 
 class ChordParser {
-  constructor(input, specialChords) {
+  constructor(input, specialChords, globalSettings) {
     this.input = input;
     this.pos = 0;
     this.specialChords = specialChords ?? new Map();
+    this.globalSettings = globalSettings;
     this.searchLists = [];
   }
 
@@ -666,7 +679,7 @@ class ChordParser {
       addSegment(segments, "on", "separator", on.start, on.end);
       const lower = this.chord(false);
       segments.push(...lower.segments);
-      structure.toPolychord(lower.structure, on);
+      structure.toPolychord(lower.structure, on, this.globalSettings?.polychordLowerMaxNotes ?? 4);
     }
   }
 
@@ -779,7 +792,7 @@ class ChordParser {
 export function parseChordSymbol(input, options = {}) {
   const source = String(input ?? "");
   if (!source) throw new ChordSyntaxError("empty", 0, 1, {}, "Enter a chord symbol.");
-  const parser = new ChordParser(source, options.specialChords);
+  const parser = new ChordParser(source, options.specialChords, options.globalSettings);
   const result = parser.chord(true);
   const complete = { source, ...result, searchLists: parser.searchLists };
   const search = chordSearchStructure(complete);

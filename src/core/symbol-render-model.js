@@ -1,9 +1,18 @@
 import { toMusicGlyphs } from "./chord-symbol.js";
 import { displayChordParts } from "./note-display.js";
 import { romanDisplayGlyphs } from "./roman-symbol.js";
+import { CLUSTER_SYMBOLS } from "./cluster-symbol.js";
 
 // A DOM-free description shared by the score, inline embeds and host adapters.
 const element = (tag, className, children = [], attrs = {}) => ({ tag, className, children, attrs });
+
+export function clusterSymbolModel(source, mode) {
+  const cluster = CLUSTER_SYMBOLS.get(source);
+  if (!cluster) return null;
+  const children = ["Clus"];
+  if (cluster.suffix) children.push(element("span", mode === "normal" ? "cluster-suffix" : "score-chord-sup", [cluster.suffix]));
+  return element("span", "event-value cluster-symbol", children);
+}
 
 export function notationModel(text, roman = false, accidentalClass = "") {
   const glyphs = roman ? romanDisplayGlyphs(text) : toMusicGlyphs(text);
