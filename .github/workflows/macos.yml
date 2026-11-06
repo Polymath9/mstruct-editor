@@ -54,7 +54,7 @@ jobs:
           path: desktop/assets/video-encoder
           key: ffmpeg-${{ matrix.arch == 'arm64' && 'macos-26' || 'macos-15' }}-${{ matrix.arch }}-${{ hashFiles('scripts/prepare-video-encoder-mac.mjs') }}
       - run: npm test
-      - name: Build DMG and ZIP without publishing
+      - name: Build ZIP package
         run: npm run desktop:dist:mac
       - name: Verify packaged app, signature and MP4 encoding
         run: node scripts/verify-mac-package.mjs
@@ -63,7 +63,6 @@ jobs:
         with:
           name: MStruct-mac-${{ matrix.arch }}-${{ github.sha }}
           path: |
-            release/MStruct-Analysis-Editor-*-mac-${{ matrix.arch }}.dmg
             release/MStruct-Analysis-Editor-*-mac-${{ matrix.arch }}.zip
             release/MStruct-Analysis-Editor-*-mac-${{ matrix.arch }}.sha256
           if-no-files-found: error

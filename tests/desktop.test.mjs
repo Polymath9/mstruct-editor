@@ -12,6 +12,7 @@ import { parseMstructDocument } from "../src/core/mstruct-document.js";
 import { loadDesktopTimelineFiles } from "../src/runtime/timeline-io.js";
 import { nextDesktopVersion, desktopBuildVersion } from "../desktop/version.mjs";
 import applicationUi from "../desktop/application-ui.cjs";
+import macBuilderConfig from "../desktop/electron-builder.mac.cjs";
 const { createDesktopLocale, applicationMenuTemplate } = applicationUi;
 const rasterCaptureSource = await readFile(new URL("../desktop/raster-capture.cjs", import.meta.url), "utf8");
 
@@ -31,6 +32,24 @@ const [packageJson, mainSource, preloadSource, audioSource, symbolSource, editor
 ]);
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+
+test("Mac distribution builds, verifies and uploads ZIP packages", async () => {
+  const [workflow, verifier] = await Promise.all([
+    readFile(new URL("../.github/workflows/macos.yml", import.meta.url), "utf8"),
+    readFile(new URL("../scripts/verify-mac-package.mjs", import.meta.url), "utf8"),
+  ]);
+  assert.deepEqual(macBuilderConfig.mac.target, ["zip"]);
+  assert.equal(macBuilderConfig.dmg, undefined);
+  assert.deepEqual([...workflow.matchAll(/^\s+(release\/.+)$/gm)].map(match => match[1].trim()), [
+    "release/MStruct-Analysis-Editor-*-mac-${{ matrix.arch }}.zip",
+    "release/MStruct-Analysis-Editor-*-mac-${{ matrix.arch }}.sha256",
+  ]);
+  assert.doesNotMatch(verifier, /\bdmg\b|\bhdiutil\b/);
+  assert.match(verifier, /run\("ditto"/);
+  assert.match(verifier, /run\("codesign"/);
+  assert.match(verifier, /--smoke-test/);
+  assert.match(verifier, /createHash\("sha256"\)/);
+});
 
 test("bundled startup demo needs no external timeline and genuine missing-file warnings remain active", async () => {
   const demo = parseMstructDocument(await readFile(new URL("../examples/k545.mstruct", import.meta.url), "utf8"));

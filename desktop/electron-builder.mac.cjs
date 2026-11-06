@@ -9,7 +9,7 @@ module.exports = {
     ? { from: "desktop/generated/icon.png", to: "desktop-icon.png" } : resource),
   artifactName: "MStruct-Analysis-Editor-${version}-mac-${arch}.${ext}",
   mac: {
-    target: ["dmg", "zip"],
+    target: ["zip"],
     icon: "desktop/generated/icon.png",
     category: "public.app-category.music",
     minimumSystemVersion: "13.0",
@@ -17,5 +17,4 @@ module.exports = {
     hardenedRuntime: false,
     notarize: false,
   },
-  dmg: { sign: false },
 };

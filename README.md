@@ -57,9 +57,9 @@ The build script defaults to npmmirror for Electron and electron-builder binary 
 
 ## macOS 自动构建 / macOS automated builds
 
-在编辑器仓库的 GitHub Actions 中手动运行 **macOS standalone**。流程分别使用 Apple 芯片与 Intel runner，生成带架构名的 DMG、ZIP 和 SHA-256 文件；版本沿用 `package.json`，不自动递增或发布 Release。需要 macOS 13 或更高版本。私有仓库的运行计入账号 Actions 额度。
+在编辑器仓库的 GitHub Actions 中手动运行 **macOS standalone**。流程分别使用 Apple 芯片与 Intel runner，生成带架构名的 ZIP 和 SHA-256 文件。解压 ZIP 后，将「分析编辑器.app」放到「应用程序」或自选目录即可使用。版本沿用 `package.json`，由维护者单独管理版本递增和 Release 发布。需要 macOS 13 或更高版本。私有仓库的运行计入账号 Actions 额度。
 
-Manually run **macOS standalone** in this editor repository's GitHub Actions. Native Apple Silicon and Intel runners produce architecture-labelled DMG, ZIP and SHA-256 files. The version comes from `package.json`; the workflow neither increments it nor publishes a Release. macOS 13 or later is required. Private-repository runs use the account's Actions allowance.
+Manually run **macOS standalone** in this editor repository's GitHub Actions. Native Apple Silicon and Intel runners produce architecture-labelled ZIP and SHA-256 files. Extract the ZIP and place the app in Applications or a directory of your choice. The version comes from `package.json`, with version increments and Release publication managed separately by the maintainer. macOS 13 or later is required. Private-repository runs use the account's Actions allowance.
 
 默认同时构建两个架构，也可用 `architecture` 选择只构建 arm64 或 x64。Apple 芯片使用 `macos-26`，Intel 使用 `macos-15-intel`；最低运行系统仍为 macOS 13，两个构建环境的编码器缓存独立。
 

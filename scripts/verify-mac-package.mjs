@@ -14,8 +14,7 @@ const { version, build: { productName } } = JSON.parse(await readFile(path.join(
 const name = `MStruct-Analysis-Editor-${version}-mac-${process.arch}`;
 const scratch = await mkdtemp(path.join(release, "mac-verification-"));
 const run = promisify(execFile);
-await run("hdiutil", ["verify", path.join(release, `${name}.dmg`)], { timeout: 60000 });
-// Launch the redistributed ZIP, not the unpackaged source or builder directory.
+// Launch the app extracted from the distribution ZIP.
 await run("ditto", ["-x", "-k", path.join(release, `${name}.zip`), scratch], { timeout: 60000 });
 const bundle = path.join(scratch, `${productName}.app`);
 await run("codesign", ["--verify", "--deep", "--strict", bundle], { timeout: 60000 });
@@ -46,10 +45,7 @@ for (const fps of [30, 60]) {
   // Require both video and audio streams to decode, including a software fallback on runners.
   await run(ffmpeg, ["-v", "error", "-i", output, "-map", "0:v:0", "-map", "0:a:0", "-f", "null", "-"], { timeout: 30000 });
 }
-const hashes = [];
-for (const extension of ["dmg", "zip"]) {
-  const file = `${name}.${extension}`;
-  hashes.push(`${createHash("sha256").update(await readFile(path.join(release, file))).digest("hex")}  ${file}`);
-}
-await writeFile(path.join(release, `${name}.sha256`), hashes.join("\n") + "\n");
+const file = `${name}.zip`;
+const hash = createHash("sha256").update(await readFile(path.join(release, file))).digest("hex");
+await writeFile(path.join(release, `${name}.sha256`), `${hash}  ${file}\n`);
 console.log(`Verified ${name}: redistributed app startup, signatures, native architecture, 30/60 fps H.264 + AAC.`);
