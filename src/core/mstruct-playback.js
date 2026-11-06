@@ -1,57 +1,6 @@
 import { createFormRouteProjector } from "./mstruct-form-tags.js";
 import { createDtcRouteProjector } from "./mstruct-dtc.js";
-
-function bigintGcd(left, right) {
-  let a = left < 0n ? -left : left;
-  let b = right < 0n ? -right : right;
-  while (b) [a, b] = [b, a % b];
-  return a || 1n;
-}
-
-function exact(numerator, denominator = 1n) {
-  if (denominator === 0n) throw new Error("Invalid exact value");
-  const sign = denominator < 0n ? -1n : 1n;
-  const divisor = bigintGcd(numerator, denominator);
-  return { numerator: (sign * numerator) / divisor, denominator: (denominator < 0n ? -denominator : denominator) / divisor };
-}
-
-function addExact(left, right) {
-  return exact(
-    left.numerator * right.denominator + right.numerator * left.denominator,
-    left.denominator * right.denominator,
-  );
-}
-
-function exactToNumber(value) {
-  return Number(value.numerator) / Number(value.denominator);
-}
-
-function decimalExact(value) {
-  const match = /^(\d+)(?:\.(\d+))?$/.exec(String(value).trim());
-  if (!match) return null;
-  const fraction = match[2] ?? "";
-  return exact(BigInt(`${match[1]}${fraction}`), 10n ** BigInt(fraction.length));
-}
-
-function parseBpm(value) {
-  const match = /^(\d+)\s*\/\s*(\d+)\s*=\s*(\d+(?:\.\d+)?)$/.exec(String(value ?? "").trim());
-  if (!match) return null;
-  const tempo = decimalExact(match[3]);
-  if (!tempo || tempo.numerator === 0n) return null;
-  return {
-    beat: exact(BigInt(match[1]), BigInt(match[2])),
-    tempo,
-  };
-}
-
-function durationMilliseconds(duration, bpmValue) {
-  const bpm = parseBpm(bpmValue);
-  if (!bpm) return null;
-  return exact(
-    BigInt(duration.numerator) * bpm.beat.denominator * 60000n * bpm.tempo.denominator,
-    BigInt(duration.denominator) * bpm.beat.numerator * bpm.tempo.numerator,
-  );
-}
+import { addExact, durationMilliseconds, exact, exactToNumber } from "./mstruct-timing.js";
 
 function numberGcd(left, right) {
   let a = Math.abs(left);

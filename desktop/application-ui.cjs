@@ -74,7 +74,9 @@ function applicationMenuTemplate({ tr, locale = "zh", sendDocumentCommand, showT
   // Native shortcuts also travel with the themed menu model.
   const accelerators = { undo: "CmdOrCtrl+Z", redo: platform === "darwin" ? "Cmd+Shift+Z" : "Ctrl+Y", cut: "CmdOrCtrl+X", copy: "CmdOrCtrl+C", paste: "CmdOrCtrl+V", selectAll: "CmdOrCtrl+A",
     togglefullscreen: platform === "darwin" ? "Ctrl+Cmd+F" : "F11", ...(platform === "darwin" ? { quit: "Cmd+Q" } : {}), resetZoom: "CmdOrCtrl+0", zoomIn: "CmdOrCtrl+Plus", zoomOut: "CmdOrCtrl+-" };
-  const role = (key, value = key, enabled = true) => ({ id: `role:${value}`, label: tr(key), role: value, enabled, ...(accelerators[value] ? { accelerator: accelerators[value] } : {}) });
+  const role = (key, value = key, enabled = true) => ({ id: `role:${value}`, label: tr(key), enabled,
+    ...(value === "undo" || value === "redo" ? { click: () => sendDocumentCommand(`edit:${value}`) } : { role: value }),
+    ...(accelerators[value] ? { accelerator: accelerators[value] } : {}) });
   const separator = () => ({ type: "separator" });
   const recent = {
     id: "recent", label: tr("recent"),

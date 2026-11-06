@@ -57,6 +57,20 @@ test("themed and native templates expose editing and view shortcuts, including w
   f.active(true); f.locale.set("en"); f.controller.refresh();
   for (const [id, shortcut] of Object.entries(expected)) assert.equal(shortcuts().get(id), shortcut, id);
 });
+
+test("native and themed undo/redo dispatch to the renderer editing context", () => {
+  const f = fixture();
+  f.active(true);
+  assert.equal(f.controller.invoke("role:undo"), true);
+  assert.equal(f.controller.invoke("role:redo"), true);
+  assert.deepEqual(f.commands, ["edit:undo", "edit:redo"]);
+  const template = applicationUi.applicationMenuTemplate({ tr: f.locale.tr, hasDocument: true, sendDocumentCommand: command => f.commands.push(command) });
+  for (const item of template.find(menu => menu.id === "edit").submenu.slice(0, 2)) {
+    assert.equal(item.role, undefined);
+    item.click();
+  }
+  assert.deepEqual(f.commands, ["edit:undo", "edit:redo", "edit:undo", "edit:redo"]);
+});
 test("macOS reserves a native application menu and keeps File and platform accelerators accessible", () => {
   const locale = applicationUi.createDesktopLocale("en");
   let installed;

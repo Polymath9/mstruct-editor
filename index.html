@@ -214,6 +214,8 @@
                   <h2 id="timelineEventHeading" data-i18n="timelineEventList">Event List</h2>
                 </div>
                 <div class="timeline-event-actions">
+                  <button class="dialog-secondary" id="timelineUndoButton" type="button" data-i18n="timelineUndo" disabled>Undo</button>
+                  <button class="dialog-secondary" id="timelineRedoButton" type="button" data-i18n="timelineRedo" disabled>Redo</button>
                   <button class="dialog-secondary" id="timelineResetButton" type="button" data-i18n="timelineReset">Reset</button>
                   <label class="timeline-event-order">
                     <span class="visually-hidden" data-i18n="timelineEventOrder">Event order</span>
@@ -224,7 +226,7 @@
                   </label>
                 </div>
               </header>
-              <div class="timeline-event-table-wrap">
+              <div class="timeline-event-table-wrap" tabindex="0" data-i18n-title="timelineTableHelp" aria-labelledby="timelineEventHeading">
                 <table class="timeline-event-table">
                   <thead><tr><th data-i18n="timelineEventNumber">Event</th><th data-i18n="timelineMeasure">Measure</th><th data-i18n="timelineBeat">Beat</th><th data-i18n="timelinePass">Pass</th><th data-i18n="timelineMilliseconds">Milliseconds</th></tr></thead>
                   <tbody id="timelineEventRows">
@@ -236,11 +238,12 @@
           </div>
 
           <aside class="timeline-waveform-panel panel" aria-labelledby="timelineWaveformHeading">
-            <header class="timeline-panel-header">
+            <header class="timeline-panel-header timeline-scale-header">
               <div>
                 <p class="panel-kicker">AUDIO</p>
                 <h2 id="timelineWaveformHeading" data-i18n="timelineEventTimeline">Event Timeline</h2>
               </div>
+              <button class="renderer-icon-button timeline-import-button" id="timelineBulkImport" type="button" aria-label="Bulk import" title="Bulk import" data-i18n-aria="timelineBulkImport" data-i18n-title="timelineBulkImport" disabled><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 15v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4"/></svg></button>
               <div class="timeline-scale-actions">
                 <button class="renderer-icon-button" id="timelineZoomIn" type="button" aria-label="Zoom in" title="Zoom in" data-i18n-aria="timelineZoomIn" data-i18n-title="timelineZoomIn">+</button>
                 <button class="renderer-icon-button" id="timelineZoomOut" type="button" aria-label="Zoom out" title="Zoom out" data-i18n-aria="timelineZoomOut" data-i18n-title="timelineZoomOut">−</button>

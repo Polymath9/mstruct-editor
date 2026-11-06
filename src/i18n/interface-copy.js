@@ -1,5 +1,8 @@
+import { timelineBulkCopy } from "./timeline-bulk-copy.js";
+
 export const interfaceCopy = {
   zh: {
+    ...timelineBulkCopy.zh,
     romanBassValidation: "罗马数字校验", rendererLayerPianoKeyboard: "钢琴键盘",
     settingsTranspose: "移调", settingsTransposeDirection: "移调方向", settingsTransposeInterval: "移调音程",
     settingsTransposeUp: "向上", settingsTransposeDown: "向下", settingsPianoFollowsTranspose: "钢琴预览声音跟随移调",
@@ -66,6 +69,7 @@ export const interfaceCopy = {
     invalidLength: "请输入 M:SS、MM:SS、H:MM:SS 或 HH:MM:SS。", pairedLinks: "附加链接需要同时填写网站名称和链接。", measure: "第 {count} 小节", continued: "（续）", elidedMeasures: "省略的小节", scoreSystem: "乐谱行", syntaxErrorTitle: "语法错误", renderFailed: "脚本无法渲染", line: "第 {count} 行", errors: "发现 {count} 个语法错误", incomplete: "没有可显示的乐谱内容。", syntaxValid: "已通过语法与节拍校验", submitting: "正在提交分析…", saving: "正在保存草稿…", complete: "已完成。", actionFailed: "操作失败。", exported: "已导出 .mstruct 文件", fileReadFailed: "无法读取所选文件", fileInvalid: "文件格式无效", mainImported: "已导入主体脚本", imported: "已导入 {name}：曲目信息与主体脚本均已更新", chordDetails: "和弦详情", closeChordDetails: "关闭和弦详情", chordDetailsAria: "查看和弦 {chord} 的详情", chordIntervalQuality: "和弦音级成分", chordNoteNames: "和弦音名", chordStaff: "五线谱", chordStaffAria: "钢琴双谱表：{notes}", chordStaffFailed: "无法渲染五线谱。", playChord: "播放和弦", loadingPiano: "正在载入钢琴……", chordAudioFailed: "无法载入钢琴采样，请检查网络后重试。", romanDetails: "罗马数字详情", closeRomanDetails: "关闭罗马数字详情", romanDetailsAria: "查看罗马数字 {roman} 的音级结构", romanStructure: "罗马数字音级结构",
   },
   en: {
+    ...timelineBulkCopy.en,
     romanBassValidation: "Roman Numeral Validation", rendererLayerPianoKeyboard: "Piano Keyboard",
     settingsTranspose: "Transpose", settingsTransposeDirection: "Transposition direction", settingsTransposeInterval: "Transposition interval",
     settingsTransposeUp: "Up", settingsTransposeDown: "Down", settingsPianoFollowsTranspose: "Piano Preview Follows Transposition",

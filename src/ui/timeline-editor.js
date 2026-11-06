@@ -1,5 +1,7 @@
 import { isAsciiRomanized } from "../core/mstruct-document.js";
 import { createMetadataLinksEditor } from "./metadata-links.js";
+import { createTimelineBulkDialog } from "./timeline-bulk-dialog.js";
+import { createTimelineTableEditing } from "./timeline-table-editing.js";
 import {
   createEmptyMstructtimeMetadata,
   createMstructtimeFileName,
@@ -83,6 +85,7 @@ export function setupTimelineEditor({
   const loopInput = document.querySelector("#timelineLoopInput");
   const loopGutter = document.querySelector("#timelineLoopGutter");
   const importLoopButton = document.querySelector("#timelineImportLoop");
+  const bulkImportButton = document.querySelector("#timelineBulkImport");
   const confirmDialog = document.querySelector("#timelineImportConfirmDialog");
   const confirmCancel = document.querySelector("#timelineImportConfirmCancel");
   const confirmOverwrite = document.querySelector("#timelineImportConfirmOverwrite");
@@ -133,6 +136,53 @@ export function setupTimelineEditor({
   let metadataCreation = false;
   let metadataLinks;
 
+  const tableEditing = createTimelineTableEditing({
+    tr, setStatus, selectRow,
+    getContext() {
+      const analysis = getAnalysisResult();
+      return {
+        document: current, analysis, rows, main: current?.main ?? "", entries: current?.entries ?? [],
+        structureKey: JSON.stringify([analysis.source, analysis.ok, getParentMetadata(), current?.loop]),
+        available: Boolean(current) && analysis.ok && mode === "timeline" && !stableTempo,
+      };
+    },
+    restore(snapshot) {
+      current.main = snapshot.main;
+      current.entries = snapshot.entries;
+      markDirty();
+      regenerateRows();
+    },
+  });
+
+  const bulkDialog = createTimelineBulkDialog({
+    tr,
+    getContext() {
+      const analysis = getAnalysisResult();
+      return {
+        analysis, analysisKey: JSON.stringify([analysis.source, analysis.ok, getParentMetadata()]),
+        document: current, rows, loop: loopInput.value, main: current?.main ?? "",
+        maximumMilliseconds: currentDuration(),
+        available: Boolean(current) && mode === "timeline" && !stableTempo,
+      };
+    },
+    commit(plan, context) {
+      if (current !== context.document || getAnalysisResult().source !== context.analysis.source
+        || loopInput.value !== context.loop || current.loop !== context.loop || current.main !== context.main) return false;
+      const main = serializeMstructtimeMain(context.analysis, plan.rows, current.entries ?? []);
+      const before = tableEditing.capture();
+      rows = plan.rows;
+      current.main = main;
+      tableEditing.record(before);
+      markDirty();
+      renderRows();
+      renderScale();
+      rendererNav?.refreshTimelineDocument(current);
+      setStatus(tr("timelineBulkComplete", plan), true);
+      return true;
+    },
+  });
+  bulkImportButton.addEventListener("click", () => bulkDialog.open());
+
   function currentRecord() {
     return files.find((item) => item.fileName === selectedFileName) ?? null;
   }
@@ -179,6 +229,7 @@ export function setupTimelineEditor({
     exportFileButton.textContent = tr(io?.saveAs ? "timelineSaveAs" : "timelineExportFile");
     refreshFileControls();
     renderManager();
+    bulkDialog.refreshLocale();
   }
 
   function setMode(nextMode) {
@@ -192,6 +243,7 @@ export function setupTimelineEditor({
     setMenuOpen(false);
     refreshLocale();
     onModeChange?.(mode);
+    tableEditing.sync();
     if (timelineMode && current) {
       renderScale();
       requestAnimationFrame(() => followPlayback({ force: true }));
@@ -239,6 +291,7 @@ export function setupTimelineEditor({
     saveButton.disabled = !current || !dirty;
     editMetadataButton.disabled = !current;
     resetButton.disabled = !current;
+    bulkImportButton.disabled = !current;
     recordButton.disabled = !current || !rows.length || !playbackState.enabled;
   }
 
@@ -300,6 +353,7 @@ export function setupTimelineEditor({
   }
 
   function renderRows() {
+    tableEditing.sync();
     if (!current || !rows.length) {
       const empty = document.createElement("tr");
       empty.className = "timeline-event-empty";
@@ -349,6 +403,7 @@ export function setupTimelineEditor({
       trElement.addEventListener("click", () => selectRow(row.number));
       return trElement;
     }));
+    tableEditing.paint();
     refreshFileControls();
   }
 
@@ -374,8 +429,10 @@ export function setupTimelineEditor({
       const { minimum, maximum } = timestampBounds(number);
       if (parsed < minimum || parsed > maximum) return false;
     }
+    const before = tableEditing.capture();
     rows = updateMstructtimeRows(rows, number, parsed);
     current.main = serializeMstructtimeMain(getAnalysisResult(), rows, current.entries ?? []);
+    tableEditing.record(before);
     markDirty();
     rendererNav?.refreshTimelineDocument(current);
     updateTimestampPresentation(number);
@@ -420,13 +477,19 @@ export function setupTimelineEditor({
         input.reportValidity();
         input.focus();
       } else {
+        cancelled = true;
         const updated = rows.find((candidate) => candidate.number === row.number);
         cell.textContent = updated?.milliseconds ?? "";
       }
     };
     input.addEventListener("blur", finish);
     input.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") { event.preventDefault(); input.blur(); }
+      if (event.key === "Enter") {
+        event.preventDefault();
+        event.stopPropagation();
+        finish();
+        if (!input.isConnected) eventTableWrap.focus({ preventScroll: true });
+      }
       if (event.key === "Escape") { event.preventDefault(); cancelled = true; renderRows(); }
     });
   }
@@ -565,6 +628,7 @@ export function setupTimelineEditor({
     event.preventDefault();
     document.activeElement?.blur?.();
     selectRow(rowNumber, { center: false, seek: false });
+    const before = tableEditing.capture();
     const initialMilliseconds = rows.find((row) => row.number === rowNumber)?.milliseconds ?? null;
     let pendingMilliseconds = initialMilliseconds;
     const move = (moveEvent) => {
@@ -578,6 +642,7 @@ export function setupTimelineEditor({
     trackPointerDrag(move, () => {
       if (pendingMilliseconds === null || pendingMilliseconds === initialMilliseconds) return;
       current.main = serializeMstructtimeMain(getAnalysisResult(), rows, current.entries ?? []);
+      tableEditing.record(before);
       markDirty();
       rendererNav?.refreshTimelineDocument(current);
       rendererNav?.seekPlayback(pendingMilliseconds);
@@ -935,9 +1000,11 @@ export function setupTimelineEditor({
     event.preventDefault();
     const measure = Number(resetMeasure.value);
     if (!Number.isSafeInteger(measure) || measure < 0) return;
+    const before = tableEditing.capture();
     rows = resetMstructtimeRows(rows, measure);
     current.entries = (current.entries ?? []).filter((entry) => entry.measure < measure);
     current.main = serializeMstructtimeMain(getAnalysisResult(), rows, current.entries);
+    tableEditing.record(before);
     markDirty();
     regenerateRows();
     resetDialog.close();

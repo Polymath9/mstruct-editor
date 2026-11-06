@@ -1,0 +1,18 @@
+METADATA:
+{MSTRUCT_FORMAT_VERSION}1
+{MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
+{MSTRUCT_PROFILE_HASH}sha256:4cc19eaa4d4b5f9e0674ee66b048482a2025c996f6c35e71f57d3c768b893881
+{SONG_NAME}时间轴批量导入 / Timeline Bulk Import
+{VERSION_NAME}Renderer Test
+{IS_STABLE_TEMPO}False
+{MSTRUCTTIME_1}timeline-bulk-time.mstructtime
+END_METADATA
+
+MAIN:
+{BN:1}{TS:4/4}{D:1/4}{||:}C|,D|,E|,F|;
+G|,A|,B|,C|;
+D|,E|,F|,G|;
+A|,B|,C|,D|;
+E|,F|,G|,A|{:||3x};
+{D:1/12}C|,D|,E|,F|,G|,A|,B|,C|,D|,E|,F|,G|;
+END_MAIN

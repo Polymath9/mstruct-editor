@@ -21,6 +21,8 @@ const uiSources = await Promise.all([
   "../src/main.js",
   "../src/ui/metadata-dialog.js",
   "../src/ui/timeline-editor.js",
+  "../src/ui/timeline-bulk-dialog.js",
+  "../src/ui/timeline-table-editing.js",
   "../src/ui/metadata-links.js",
   "../src/ui/application-settings.js",
   "../src/ui/score-renderer.js",

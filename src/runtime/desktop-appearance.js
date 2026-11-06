@@ -29,6 +29,11 @@ export function setupDesktopAppearance({ desktopApi, button, tr, rules, openRule
   createDesktopMenu({ api: desktopApi, label: () => tr("desktopMenuBar") });
   document.querySelector(".header-actions").append(document.querySelector("#renderButton"));
   desktopApi.onCommand(command => {
+    if (command === "edit:undo" || command === "edit:redo") {
+      const action = command.slice("edit:".length);
+      const event = new CustomEvent("mstruct-edit-command", { detail: action, cancelable: true });
+      if (document.dispatchEvent(event)) document.execCommand(action);
+    }
     if (command === "application-settings") ui.open();
     if (command === "editor-settings") openEditorSettings();
     if (command === "set-locale:zh" || command === "set-locale:en") {
