@@ -542,7 +542,7 @@ test("音簇、速度轨与文档标题使用各自的非交互渲染结构", ()
 test("同一 system 的 BPM 轨道统一高度，避免预备拍和后续小节错位", () => {
   assert.match(
     stylesheet,
-    /\.score-system\.has-top-annotations\s*\{[^}]*--speed-track-size:\s*2\.125em;[^}]*--system-rows:\s*1\.25em minmax\(var\(--speed-track-size\), auto\) minmax\(1\.35em, \.45fr\) var\(--music-line-size\) auto var\(--comment-track\) var\(--tag-content-extra\) 1fr;[^}]*--speed-row:\s*2;[^}]*--reference-row:\s*3;/s,
+    /\.score-system\.has-top-annotations\s*\{[^}]*--speed-track-size:\s*2\.125em;[^}]*--system-rows:\s*1\.25em minmax\(var\(--speed-track-size\), auto\) minmax\(1\.35em, \.45fr\) var\(--music-line-size\) var\(--duration-track-size, auto\) var\(--comment-track\) var\(--tag-content-extra\) 1fr;[^}]*--speed-row:\s*2;[^}]*--reference-row:\s*3;/s,
   );
   assert.match(stylesheet, /\.score-system\.has-top-annotations\.has-form-symbols\s*\{[^}]*--form-row:\s*2;[^}]*--speed-row:\s*3;[^}]*--reference-row:\s*4;/s);
   assert.doesNotMatch(stylesheet, /--bpm-row|--time-row|--bpm-track-size/);

@@ -1,0 +1,26 @@
+METADATA:
+{MSTRUCT_FORMAT_VERSION}1
+{MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
+{MSTRUCT_PROFILE_HASH}sha256:751637279628bf6816ddb1892455066b5006801d274ed4abc2957c798f8c9cc2
+{SONG_NAME}横向持续线与注释行 / Horizontal Ranges and Comment Rows
+{VERSION_NAME}Renderer Test
+{IS_STABLE_TEMPO}False
+END_METADATA
+
+MAIN:
+{BN:1}{TS:adlib}{TC:f}{BPM:1/4=220.5}{D:7/4}<Scale_Phrygian:f>
+[F:Intro||][/COMMENT:1]Fm7add(b2,4,b6)|i7;{LB}
+[F:A||]F1|i;{LB}
+{D:1/4}F1|i,,,,[/COMMENT:2]C[q4:(#4,7)]/F|io,,;{LB}
+{D:1/12}F1|i;{LB}
+{D:1/4}F1|i</Scale_Phrygian>;
+END_MAIN
+
+COMMENT:
+[COMMENT:1<en>]
+The continuous tag below starts in a measure with a comment.
+[/COMMENT:1<en>]
+[COMMENT:2<en>]
+The same tag passes through a measure without a comment.
+[/COMMENT:2<en>]
+END_COMMENT

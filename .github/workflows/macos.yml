@@ -8,6 +8,10 @@ on:
         type: choice
         options: [both, arm64, x64]
         default: both
+      run_checks:
+        description: Run regression and native package checks
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -54,10 +58,18 @@ jobs:
           path: desktop/assets/video-encoder
           key: ffmpeg-${{ matrix.arch == 'arm64' && 'macos-26' || 'macos-15' }}-${{ matrix.arch }}-${{ hashFiles('scripts/prepare-video-encoder-mac.mjs') }}
       - run: npm test
+        if: inputs.run_checks
       - name: Build ZIP package
         run: npm run desktop:dist:mac
       - name: Verify packaged app, signature and MP4 encoding
+        if: inputs.run_checks
         run: node scripts/verify-mac-package.mjs
+      - name: Write package checksum
+        if: ${{ !inputs.run_checks }}
+        run: |
+          for package in release/MStruct-Analysis-Editor-*-mac-${{ matrix.arch }}.zip; do
+            (cd release && shasum -a 256 "$(basename "$package")") > "${package%.zip}.sha256"
+          done
       - name: Upload verified packages
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

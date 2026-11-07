@@ -529,7 +529,7 @@ body.mstruct-viewer.renderer-fullscreen-external .renderer-canvas { min-block-si
   --tag-content-extra: 0em;
   --tag-lane-count: 0;
   --music-line-size: calc(var(--music-line-base-size) + var(--system-content-extra));
-  --system-rows: 1.6fr var(--music-line-size) auto var(--comment-track) var(--tag-content-extra) 1fr;
+  --system-rows: 1.6fr var(--music-line-size) var(--duration-track-size, auto) var(--comment-track) var(--tag-content-extra) 1fr;
   --reference-row: 1;
   --music-row: 2;
   --duration-row: 3;
@@ -542,7 +542,7 @@ body.mstruct-viewer.renderer-fullscreen-external .renderer-canvas { min-block-si
 }
 .score-system.has-top-annotations {
   --speed-track-size: 2.125em;
-  --system-rows: 1.25em minmax(var(--speed-track-size), auto) minmax(1.35em, .45fr) var(--music-line-size) auto var(--comment-track) var(--tag-content-extra) 1fr;
+  --system-rows: 1.25em minmax(var(--speed-track-size), auto) minmax(1.35em, .45fr) var(--music-line-size) var(--duration-track-size, auto) var(--comment-track) var(--tag-content-extra) 1fr;
   --speed-row: 2;
   --reference-row: 3;
   --music-row: 4;
@@ -552,14 +552,14 @@ body.mstruct-viewer.renderer-fullscreen-external .renderer-canvas { min-block-si
 .score-system.has-stacked-tempo-bpm { --speed-track-size: 3.3em; }
 .score-system.has-form-symbols {
   --form-content-extra: 3.35em;
-  --system-rows: 1.25em minmax(3em, auto) minmax(1.35em, .45fr) var(--music-line-size) auto var(--comment-track) var(--tag-content-extra) 1fr;
+  --system-rows: 1.25em minmax(3em, auto) minmax(1.35em, .45fr) var(--music-line-size) var(--duration-track-size, auto) var(--comment-track) var(--tag-content-extra) 1fr;
   --form-row: 2;
   --music-row: 4;
   --duration-row: 5;
   --comment-row: 6;
 }
 .score-system.has-top-annotations.has-form-symbols {
-  --system-rows: 1.25em minmax(3em, auto) minmax(var(--speed-track-size), auto) minmax(1.35em, .45fr) var(--music-line-size) auto var(--comment-track) var(--tag-content-extra) 1fr;
+  --system-rows: 1.25em minmax(3em, auto) minmax(var(--speed-track-size), auto) minmax(1.35em, .45fr) var(--music-line-size) var(--duration-track-size, auto) var(--comment-track) var(--tag-content-extra) 1fr;
   --form-row: 2;
   --speed-row: 3;
   --reference-row: 4;
@@ -570,14 +570,14 @@ body.mstruct-viewer.renderer-fullscreen-external .renderer-canvas { min-block-si
 .score-system.has-comments { --comment-content-extra: 1.85em; --comment-track: var(--comment-content-extra); --comment-track-count: 1; }
 .score-system.has-endings {
   --ending-row: 2;
-  --system-rows: 1.6fr 1.35em var(--music-line-size) auto var(--comment-track) var(--tag-content-extra) 1fr;
+  --system-rows: 1.6fr 1.35em var(--music-line-size) var(--duration-track-size, auto) var(--comment-track) var(--tag-content-extra) 1fr;
   --music-row: 3;
   --duration-row: 4;
   --comment-row: 5;
 }
 .score-system.has-top-annotations.has-endings {
   --ending-row: 3;
-  --system-rows: 1.25em minmax(var(--speed-track-size), auto) minmax(1.35em, .45fr) var(--music-line-size) auto var(--comment-track) var(--tag-content-extra) 1fr;
+  --system-rows: 1.25em minmax(var(--speed-track-size), auto) minmax(1.35em, .45fr) var(--music-line-size) var(--duration-track-size, auto) var(--comment-track) var(--tag-content-extra) 1fr;
   --speed-row: 2;
   --reference-row: 3;
   --music-row: 4;
@@ -586,7 +586,7 @@ body.mstruct-viewer.renderer-fullscreen-external .renderer-canvas { min-block-si
 }
 .score-system.has-form-symbols.has-endings {
   --ending-row: 4;
-  --system-rows: 1.25em minmax(3em, auto) 1.35em minmax(1.35em, .45fr) var(--music-line-size) auto var(--comment-track) var(--tag-content-extra) 1fr;
+  --system-rows: 1.25em minmax(3em, auto) 1.35em minmax(1.35em, .45fr) var(--music-line-size) var(--duration-track-size, auto) var(--comment-track) var(--tag-content-extra) 1fr;
   --form-row: 2;
   --music-row: 5;
   --duration-row: 6;
@@ -594,7 +594,7 @@ body.mstruct-viewer.renderer-fullscreen-external .renderer-canvas { min-block-si
 }
 .score-system.has-top-annotations.has-form-symbols.has-endings {
   --ending-row: 4;
-  --system-rows: 1.25em minmax(3em, auto) minmax(var(--speed-track-size), auto) minmax(1.35em, .45fr) var(--music-line-size) auto var(--comment-track) var(--tag-content-extra) 1fr;
+  --system-rows: 1.25em minmax(3em, auto) minmax(var(--speed-track-size), auto) minmax(1.35em, .45fr) var(--music-line-size) var(--duration-track-size, auto) var(--comment-track) var(--tag-content-extra) 1fr;
   --form-row: 2;
   --speed-row: 3;
   --reference-row: 4;

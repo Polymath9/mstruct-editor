@@ -62,6 +62,33 @@ export function presentationVideoGeometry(visible, lowerRows, viewportHeight) {
     height: Math.min(viewportHeight - 80, Math.max(visible.height, visible.leading + lowerRows.height)) };
 }
 
+/** Horizontal measures share lower tracks even when a local annotation is absent. */
+function presentationRowSizes(rows) {
+  return Object.fromEntries(["music", "duration", "comment"].map(key => [key, Math.max(0, ...rows.map(row => row[key] ?? 0))]));
+}
+
+function resetPresentationRows(chart) {
+  chart.classList.remove("has-presentation-rows");
+  for (const name of ["music-track", "duration-track", "comment-track", "comment-count"]) chart.style.removeProperty(`--presentation-${name}`);
+}
+
+function alignPresentationRows(chart, systems) {
+  resetPresentationRows(chart);
+  const win = chart.ownerDocument.defaultView;
+  const rows = systems.flatMap(system => {
+    const slot = system.querySelector(".measure, .ellipsis-marker");
+    if (!slot) return [];
+    const style = win.getComputedStyle(slot);
+    const tracks = style.gridTemplateRows.split(/\s+/).map(Number.parseFloat);
+    const track = name => tracks[Number(style.getPropertyValue(`--${name}-row`)) - 1] || 0;
+    return [{ music: track("music"), duration: track("duration"), comment: system.classList.contains("has-comments") ? track("comment") : 0 }];
+  });
+  const sizes = presentationRowSizes(rows);
+  for (const name of ["music", "duration", "comment"]) chart.style.setProperty(`--presentation-${name}-track`, sizes[name] ? `${sizes[name]}px` : name === "comment" ? " " : "0px");
+  chart.style.setProperty("--presentation-comment-count", sizes.comment ? "1" : "0");
+  chart.classList.add("has-presentation-rows");
+}
+
 /** Merge nearby tall passages on the musical clock, including repeats and seeks. */
 export function presentationHeightRanges(visits, baseline, viewportHeight) {
   const ranges = [];
@@ -141,6 +168,7 @@ export function createRendererScrollStrip({ panel, canvas, onGeometryChange, get
     for (const element of elements) element.style.removeProperty("transform");
     resetPresentationBoundaries(chart);
     joinPresentationBoundaries(elements);
+    alignPresentationRows(chart, elements);
     const origin = chart.getBoundingClientRect();
     systems = elements.map(element => {
       const rect = element.getBoundingClientRect();
@@ -223,6 +251,7 @@ export function createRendererScrollStrip({ panel, canvas, onGeometryChange, get
       else {
         if (chart) chart.style.removeProperty("transform");
         if (chart) resetPresentationBoundaries(chart);
+        if (chart) resetPresentationRows(chart);
         for (const system of systems) system.element.style.removeProperty("transform");
         focus.hidden = true;
         canvas.style.removeProperty("--presentation-system-width");

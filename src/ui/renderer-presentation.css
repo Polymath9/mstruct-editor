@@ -50,6 +50,12 @@ body.mstruct-viewer .renderer-panel[data-presentation-mode="scroll"] .renderer-c
 .renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) .score-global-tags { display: none; }
 .renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) .chart { display: flex; align-items: flex-start; gap: 0; inline-size: max-content; z-index: 1; }
 .renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) .score-system { flex: 0 0 var(--presentation-system-width); inline-size: var(--presentation-system-width); }
+.renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) .chart.has-presentation-rows .score-system {
+  --music-line-size: var(--presentation-music-track);
+  --duration-track-size: var(--presentation-duration-track);
+  --comment-track: var(--presentation-comment-track);
+  --comment-track-count: var(--presentation-comment-count);
+}
 .renderer-panel:is([data-presentation-mode="scroll"], [data-presentation-mode="video"]) :is(.measure, .measure-slot) { row-gap: .3em; }
 .is-strip-joined-line { translate: var(--strip-boundary-shift) 0; }
 .is-strip-duplicate-line { background: transparent !important; }
