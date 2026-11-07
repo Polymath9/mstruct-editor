@@ -881,6 +881,18 @@ test("MAIN 将 power chord 保存为根音与五度，并拒绝后缀", () => {
   assert.ok(invalid.errors.some((error) => error.code === "chord-terminal-suffix"));
 });
 
+test("MAIN accepts terminal tritones in chord fields and annotations while preserving Roman fields", () => {
+  const valid = parseMstruct("{BN:1}{TS:adlib}{D:1}{TC:C}C(b5)\\\\F#(b5)|I;", { romanConfig });
+  assert.equal(valid.ok, true, valid.errors.map(error => error.message).join("\n"));
+  const event = valid.measures[0].slots[0].events[0];
+  assert.deepEqual(event.chordResult.structure.values, ["1", "b5"]);
+  assert.deepEqual(event.chordAnnotationResult.structure.toNoteNames(), ["F#", "C"]);
+  assert.equal(event.roman, "I");
+  const invalid = parseMstruct("{BN:1}{TS:adlib}{D:1}C(b5)/G|;");
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors.some(error => error.code === "chord-terminal-suffix"));
+});
+
 test("和弦与 Roman 注释按同栏语法独立编译并保存精确结果", () => {
   const result = parseMstruct(
     "{BN:1}{TS:adlib}{D:1}{TC:C}C7\\\\Edim/C|IDM7\\\\V7/IV;",

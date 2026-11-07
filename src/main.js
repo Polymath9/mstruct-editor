@@ -445,7 +445,7 @@ commentDialogUi = createCommentDialog({
   getLocale: getInterfaceLocale,
   onSave: (next) => {
     comments = normalizeComments(next);
-    renderSource();
+    renderSource({ preserveScroll: true });
     notifyDirtyState();
   },
   notifyDirtyState,

@@ -717,6 +717,12 @@ class ChordParser {
       quality = "normal-form";
       structure.items = [];
       this.parseNormalForm(structure, segments);
+    } else if (this.startsWith("(b5)")) {
+      mode = "terminal";
+      quality = "tritone";
+      const tritone = this.consume("(b5)");
+      structure.append("b5", "manual", tritone);
+      addSegment(segments, "(b5)", "tension", tritone.start, tritone.end, true);
     } else if (this.startsWith("1") && !this.startsWith("11") && !this.startsWith("13")) {
       mode = "terminal";
       quality = "root-only";

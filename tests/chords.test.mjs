@@ -247,6 +247,26 @@ test("power chords contain only root and fifth and end after 5", () => {
   }
 });
 
+test("terminal tritones retain parentheses, spell a diminished fifth and reject suffixes", () => {
+  const result = parse("C(b5)");
+  assert.deepEqual(result.structure.values, ["1", "b5"]);
+  assert.deepEqual(result.structure.toNoteNames(), ["C", "Gb"]);
+  assert.deepEqual(result.structure.toMidiNotes(), [60, 66]);
+  assert.deepEqual(result.searchAtoms, ["C", "(", "b5", ")"]);
+  for (const mode of ["normal", "camel", "superscript"]) {
+    const parts = renderChordParts(result, mode);
+    assert.equal(parts.map(part => part.text).join(""), "C(b5)");
+    assert.deepEqual(parts.map(part => part.superscript), [false, mode !== "normal"]);
+  }
+  assert.deepEqual(parse("F#(b5)").structure.toNoteNames(), ["F#", "C"]);
+  assert.deepEqual(parse("Cb5").structure.toNoteNames(), ["Cb", "Gb"]);
+  assert.deepEqual(parse("C7(b5)").structure.values, ["1", "3", "b5", "b7"]);
+  for (const suffix of ["7", "add9", "/G", "onF", "M7", "sus4", "no3", "(b5)"]) {
+    assert.throws(() => parse(`C(b5)${suffix}`), error => error instanceof ChordSyntaxError && error.code === "terminal-suffix");
+  }
+  for (const source of ["C(b5", "C(b5,b9)", "Cm(b5)"]) assert.throws(() => parse(source), ChordSyntaxError);
+});
+
 test("reports a precise source range for documented syntax failures", () => {
   const failures = [
     ["G7b9#5", "altered-order", "#5"],

@@ -215,6 +215,15 @@ test("power chords match their exact symbol and root-fifth note set", () => {
   assert.equal(search(projection, "C[notes:0,7]|*").length, 2);
 });
 
+test("terminal tritones share note-set search while retaining exact parentheses and OR/NOT", () => {
+  const projection = compile("{BN:1}{TS:adlib}{D:1}C(b5)|,Caddb5no(3,5)|,C5|;");
+  assert.equal(search(projection, "C(b5)|*").length, 2);
+  assert.equal(search(projection, "C(b5)|* --notallowdifferentnotation").length, 1);
+  assert.equal(search(projection, "C[notes:0,6]|*").length, 2);
+  assert.equal(search(projection, "(C(b5)||C5)|*").length, 3);
+  assert.equal(search(projection, "C*!(C(b5))|*").length, 1);
+});
+
 test("renderer search joins chord and Roman text into one tight range box", () => {
   const box = searchHighlightBox([
     { left: 120, top: 60, right: 148, bottom: 78, width: 28, height: 18 },
