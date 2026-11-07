@@ -45,8 +45,10 @@ function occurrence(kind, definition, lane, token, rangeId = null, visualMode = 
     zhName: `${definition.zhName}${detachedEnd ? "结束" : ""}`,
     enName: `${definition.enName}${detachedEnd ? " End" : ""}`,
     durationMode: definition.durationMode,
-    zhParts: definition.zhParts,
-    enParts: definition.enParts,
+    zhParts: detachedEnd && definition.zhParts?.length
+      ? [...definition.zhParts, { type: "literal", value: "结束" }] : definition.zhParts,
+    enParts: detachedEnd && definition.enParts?.length
+      ? [...definition.enParts, { type: "literal", value: " End" }] : definition.enParts,
     semanticKind: definition.semanticKind ?? null,
     ...(definition.form ? { form: true, group: definition.group, replacePrevious: definition.replacePrevious,
       ...(definition.allowGlobal !== undefined ? { allowGlobal: definition.allowGlobal } : {}) } : {}),

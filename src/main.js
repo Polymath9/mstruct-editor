@@ -578,6 +578,7 @@ function renderResult(result) {
   const targetWidth = scoreTargetWidth();
   renderedScoreTargetWidth = targetWidth;
   const systems = layoutSystems(result.flow, targetWidth, {
+    independentMeasures: rendererCanvas.dataset.fixedScale === "true",
     rendererScale: rendererDisplay.getScale(),
     preferences: getScorePreferences(),
     durationDisplayMode: chordPreferences.durationDisplayMode,

@@ -234,6 +234,7 @@ function fittingSegmentEnd(engraving, startSlot, availableWidth) {
 
 export function layoutSystems(flow, requestedWidth, options = {}) {
   flow = projectChordDisplayFlow(flow, options.preferences);
+  const independentMeasures = options.independentMeasures === true;
   const scale = normalizeRendererScale(options.rendererScale) / 100;
   const targetWidth = Math.max(360, Number(requestedWidth) || 720) / scale;
   const systems = [];
@@ -263,6 +264,14 @@ export function layoutSystems(flow, requestedWidth, options = {}) {
     if (!measure.complete) return;
     const engraving = engraveMeasure(measure, options);
     const fullSegment = makeMeasureSegment(engraving, 0, engraving.slots.length);
+    if (independentMeasures) {
+      closeSystem(systems, current);
+      resetCurrent();
+      addSegment(measure, engraving, fullSegment);
+      closeSystem(systems, current);
+      resetCurrent();
+      return;
+    }
     const fullRequiredWidth = fullSegment.naturalWidth + START_BAR_WIDTH;
     if (fullRequiredWidth > targetWidth) {
       let startSlot = 0;
@@ -327,6 +336,7 @@ export function layoutSystems(flow, requestedWidth, options = {}) {
     ...system,
     targetWidth,
     isLast: index === systems.length - 1,
-    justified: index !== systems.length - 1 && !system.endsWithEllipsis,
+    justified: !independentMeasures && index !== systems.length - 1 && !system.endsWithEllipsis,
+    ...(independentMeasures ? { independentMeasure: true } : {}),
   }));
 }

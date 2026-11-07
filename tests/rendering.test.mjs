@@ -12,7 +12,7 @@ import { snapScoreBarline, alignScoreBarlines } from "../src/ui/score-barlines.j
 import { createScoreRenderer } from "../src/ui/score-renderer.js";
 import { createScoreFeedback } from "../src/ui/score-feedback.js";
 import { createRendererPianoKeyboard, pianoKeyboardOverlaps, pianoKeyboardScrollTarget } from "../src/ui/renderer-piano-keyboard.js";
-import { presentationStripGeometry, presentationScrollGeometry, presentationHeightRanges, joinPresentationBoundaries, presentationContentBounds } from "../src/ui/renderer-scroll-strip.js";
+import { presentationStripGeometry, presentationScrollGeometry, presentationVideoGeometry, presentationHeightRanges, joinPresentationBoundaries, presentationContentBounds } from "../src/ui/renderer-scroll-strip.js";
 
 test("source numbering shares measure labels, continuation blanks and cumulative bar numbers", () => {
   const source = "{BN:1}C\nG\n\n{BN:5}F\n";
@@ -149,6 +149,32 @@ test("ordinary score rows share the precomputed height and nearby tall passages 
     { startMs: 10000, endMs: 11000, leading: 420, trailing: 160, height: 632 },
   ], { leading: 203, height: 456 }, 1080);
   assert.deepEqual(ranges.map(range => [range.start, range.end, range.height]), [[2000, 9000, 744], [10000, 14000, 608]]);
+});
+
+test("forms keep their measure-local height while the viewport only crops the strip", () => {
+  const items = [
+    { left: 0, right: 3000, top: 0, bottom: 120 },
+    { left: 80, right: 120, top: -100, bottom: -60 },
+    { left: 80, right: 120, top: -180, bottom: -130 },
+    { left: 200, right: 300, top: -80, bottom: -30 },
+    { left: 600, right: 650, top: -80, bottom: -30 },
+  ];
+  const geometry = offset => presentationScrollGeometry({ items, offset, viewportWidth: 800, viewportHeight: 1080 });
+  assert.equal(geometry(-119.9).leading, 180);
+  assert.equal(geometry(-120).leading, 80);
+  assert.equal(geometry(-300).leading, 80);
+  assert.equal(geometry(-650).leading, 0);
+  assert.equal(geometry(-119.9).leading, 180, "seeks and repeats only change visible bounds");
+  assert.equal(items[3].top, items[4].top, "A and Transition start at the same height while Intro is still visible");
+});
+
+test("video releases departed form rows immediately while holding the lower musical passage", () => {
+  const lowerRows = { leading: 0, height: 248 };
+  assert.deepEqual(presentationVideoGeometry({ leading: 180, height: 322 }, lowerRows, 1080), { leading: 180, height: 428 });
+  assert.deepEqual(presentationVideoGeometry({ leading: 80, height: 222 }, lowerRows, 1080), { leading: 80, height: 328 });
+  assert.deepEqual(presentationVideoGeometry({ leading: 30, height: 172 }, lowerRows, 1080), { leading: 30, height: 278 });
+  assert.equal(presentationVideoGeometry({ leading: 30, height: 172 }, { height: 600 }, 1080).height, 630);
+  assert.equal(presentationVideoGeometry({ leading: 420, height: 1050 }, { height: 600 }, 1080).height, 1000);
 });
 
 test("presentation bounds discard outer empty tracks and retain duration and dense tag boxes", () => {
@@ -827,6 +853,66 @@ test("BPM 拍单位复用时值音符规则，连音数字可读且新里曼弧�
   assert.match(stylesheet, /\.bpm-note\.duration-notes/);
   assert.match(stylesheet, /\.renderer-nav \{[^}]*z-index:\s*10/s);
   assert.match(stylesheet, /@media \(max-width: 1000px\)[\s\S]*\.renderer-nav \{[^}]*z-index:\s*10/s);
+});
+
+test("horizontal tag and comment ranges join measure edges without printed-system gaps", (t) => {
+  const previousStyle = globalThis.getComputedStyle;
+  globalThis.getComputedStyle = () => ({ fontSize: "16px" });
+  t.after(() => { if (previousStyle === undefined) delete globalThis.getComputedStyle; else globalThis.getComputedStyle = previousStyle; });
+  const box = (left, right) => ({ left, right, top: 30, bottom: 40, height: 10 });
+  const node = (left, right) => ({ getBoundingClientRect: () => box(left, right) });
+  const renderer = createScoreRenderer({
+    makeElement: (tag, className) => ({ className, style: {}, children: [], setAttribute() {}, addEventListener() {}, append(child) { this.children.push(child); } }),
+    getRendererLayers: () => ({ tags: true, form: true, comments: true }),
+  });
+  for (const mode of ["default", "scroll", "video"]) {
+    const systems = [0, 100, 200].map(left => ({ ...node(left, left + 100), querySelector: () => node(left, left + 100) }));
+    const source = { ...node(20, 40), dataset: { tagRangeId: "1", tagLane: "0", commentRangeId: "1", commentNumber: "1" }, closest: () => systems[0] };
+    const target = { ...node(260, 260), closest: selector => selector === ".score-system" ? systems[2] : null };
+    const chart = { ...node(0, 300), layers: {}, closest: () => ({ dataset: { presentationMode: mode } }),
+      querySelector: selector => selector.includes("end-anchor") ? target : null,
+      querySelectorAll: selector => selector === ".score-system" ? systems : [source],
+      append(layer) { this.layers[layer.className] = layer; },
+    };
+    renderer.drawTagRangeLines(chart);
+    renderer.drawCommentRangeLines(chart);
+    for (const kind of ["tag", "comment"]) {
+      const segments = chart.layers[`${kind}-range-layer`].children.filter(child => child.className === `${kind}-range-segment`);
+      assert.equal(segments.length, 3);
+      for (let index = 1; index < segments.length; index++) {
+        const previousRight = parseFloat(segments[index - 1].style.left) + parseFloat(segments[index - 1].style.width);
+        const gap = parseFloat(segments[index].style.left) - previousRight;
+        assert.ok(Math.abs(gap - (mode === "default" ? 12.8 : 0)) < 1e-8, `${mode}: ${kind} ranges meet at the same boundary`);
+      }
+      assert.equal(parseFloat(segments.at(-1).style.left) + parseFloat(segments.at(-1).style.width), 260, "the real range endpoint is unchanged");
+    }
+  }
+});
+
+test("horizontal neo-Riemannian connections span adjacent measures as one arc", (t) => {
+  const previousStyle = globalThis.getComputedStyle, previousDocument = globalThis.document, previousCss = globalThis.CSS;
+  const element = () => ({ attributes: {}, style: {}, children: [], setAttribute(key, value) { this.attributes[key] = value; }, append(child) { this.children.push(child); } });
+  globalThis.getComputedStyle = () => ({ fontSize: "16px" });
+  globalThis.document = { createElementNS: element }; globalThis.CSS = { escape: value => value };
+  t.after(() => {
+    for (const [key, previous] of [["getComputedStyle", previousStyle], ["document", previousDocument], ["CSS", previousCss]]) {
+      if (previous === undefined) delete globalThis[key]; else globalThis[key] = previous;
+    }
+  });
+  const node = (left, right) => ({ getBoundingClientRect: () => ({ left, right, width: right - left, top: 100, bottom: 120, height: 20 }) });
+  const renderer = createScoreRenderer({ getRendererLayers: () => ({ newRiemannian: true }) });
+  for (const mode of ["default", "scroll", "video"]) {
+    const systems = [0, 400].map(left => ({ ...node(left, left + 100), querySelectorAll: () => [] }));
+    const source = { ...node(20, 40), closest: () => systems[0] };
+    const target = { ...node(450, 470), dataset: { newRiemannianSourceOrder: "1", newRiemannian: "P" }, closest: () => systems[1] };
+    const chart = { ...node(0, 500), closest: () => ({ dataset: { presentationMode: mode } }),
+      querySelector: selector => selector === ".new-riemannian-layer" ? null : source,
+      querySelectorAll: () => [target], append(layer) { this.layer = layer; } };
+    renderer.drawNewRiemannianConnections(chart);
+    const arcs = chart.layer.children.filter(child => child.attributes.class === "new-riemannian-arc");
+    assert.equal(arcs.length, mode === "default" ? 2 : 1, mode);
+    if (mode !== "default") assert.match(arcs[0].attributes.d, /^M 40 [\d.-]+ Q [\d.-]+ [\d.-]+ 450 [\d.-]+$/);
+  }
 });
 
 test("figured-bass lines start after the complete annotation in each Roman row", (t) => {

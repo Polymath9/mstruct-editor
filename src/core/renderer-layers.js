@@ -11,6 +11,13 @@ export function visibleTagLanes(source, layers) {
     .filter((tag) => tagIsVisible(tag, layers) && occupied.has(tag.lane) && !(tag.kind === "active" && tag.visualMode === "detached")).map((tag) => tag.lane));
 }
 
+export function visibleTagLaneMap(sources, layers) {
+  const lanes = [...new Set(sources.flatMap(source => [...visibleTagLanes(source, layers)]))].sort((a, b) => a - b);
+  // The default view keeps each continuous line on its original row across systems.
+  // Hiding a layer still compacts the remaining visible tracks.
+  return new Map(lanes.map((lane, row) => [lane, layers.tags && layers.form ? lane : row]));
+}
+
 export function normalizeRendererLayers(value) {
   const source = value && typeof value === "object" ? value : {};
   return Object.fromEntries(RENDERER_LAYER_KEYS.map((key) => [key, typeof source[key] === "boolean" ? source[key] : DEFAULT_RENDERER_LAYERS[key]]));

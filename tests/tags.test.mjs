@@ -7,8 +7,9 @@ import { buildPlaybackPlan } from "../src/core/mstruct-playback.js";
 import { playbackEntryInformation } from "../src/core/mstruct-playback-info.js";
 import { parseTagConfigCsv, tagDisplayName } from "../src/core/tag-config.js";
 import { parseFormTagConfigCsv } from "../src/core/form-tag-config.js";
-import { parseGlobalTagList, parseSemanticTagConfigCsv } from "../src/core/semantic-tags.js";
+import { parseGlobalTagList, parseSemanticTagConfigCsv, tagDisplayParts } from "../src/core/semantic-tags.js";
 import { parseRomanConfigCsv } from "../src/core/roman-symbol.js";
+import { visibleTagLaneMap } from "../src/core/renderer-layers.js";
 
 test("closing prefixes are reserved in CSV definitions and GLOBAL_TAGS accepts forward slash only", () => {
   for (const token of ["</custom>", "<*/custom>"]) {
@@ -47,6 +48,115 @@ const romanConfig = parseRomanConfigCsv({ basicCsv: romanBasicCsv, advancedCsv: 
 const semanticTagConfig = parseSemanticTagConfigCsv({ cadenceCsv, tonalCsv, sequenceCsv }, { romanConfig });
 const defaultTagConfig = parseTagConfigCsv(defaultCsv);
 const defaultFormTagConfig = parseFormTagConfigCsv(await readFile(new URL("../src/config/form-tags.csv", import.meta.url), "utf8"));
+
+test("detached endpoints display the localized ending for every ranged tag family", () => {
+  const options = { tagConfig: defaultTagConfig, formTagConfig: defaultFormTagConfig, semanticTagConfig, romanConfig };
+  const cases = [
+    ...[defaultTagConfig, defaultFormTagConfig].flatMap(config => config.tags
+      .filter(tag => tag.durationMode !== 1)
+      .map(tag => [tag.token, `<*/${tag.token.slice(1, -1)}>`])),
+    ...["F", '"f#"'].map(note => [`<Centricity:${note}>`, "<*/Centricity>"]),
+    ...[...romanConfig.basics.keys()].map(roman => [`<pedal:${roman}>`, "<*/pedal>"]),
+    ...semanticTagConfig.tonal.entries.flatMap(entry => [
+      ...(entry.modeZhName ? [[`<Mode_${entry.base}:Bb>`, `<*/Mode_${entry.base}>`]] : []),
+      ...(entry.scaleZhName ? [[`<Scale_${entry.base}:Bb>`, `<*/Scale_${entry.base}>`]] : []),
+    ]),
+    ...["Seq", "SeqInv"].flatMap(family => [...semanticTagConfig.sequences.byValue.keys()]
+      .map(value => [`<${family}:${value}>`, `<*/${family}>`])),
+  ];
+  for (const [opening, closing] of cases) {
+    // Reusing a definition must not accumulate endings or change its structured parameters.
+    const result = parseMstruct(`{BN:1}{TS:adlib}{D:1/4}${opening}X,X,${closing}X,${opening}X,X,${closing}X;`, options);
+    assert.equal(result.ok, true, `${opening}: ${JSON.stringify(result.errors)}`);
+    const allSlots = result.measures[0].slots;
+    const tags = allSlots.flatMap(slot => slot.tags);
+    assert.deepEqual(tags.map(tag => tag.kind), ["start", "detached-end", "start", "detached-end"]);
+    assert.ok(result.tagRanges.every(range => range.visualMode === "detached"), opening);
+    for (const slot of [allSlots[1], allSlots[4]]) {
+      assert.equal(slot.tagOccupiedLanes.size, 0, `${opening} must not reserve interior rows`);
+      assert.equal(slot.activeTags[0].visualMode, "detached", opening);
+    }
+    for (const locale of ["zh", "en"]) {
+      const startParts = tagDisplayParts(tags[0], locale);
+      const startName = tagDisplayName(tags[0], locale);
+      const endName = startName + (locale === "en" ? " End" : "结束");
+      assert.equal(startParts.map(part => part.value).join(""), startName, opening);
+      assert.equal(tagDisplayParts(tags[2], locale).map(part => part.value).join(""), startName, opening);
+      for (const tag of [tags[1], tags[3]]) {
+        const parts = tagDisplayParts(tag, locale);
+        assert.equal(tagDisplayName(tag, locale), endName, closing);
+        assert.equal(parts.map(part => part.value).join(""), endName, closing);
+        assert.deepEqual(parts.filter(part => ["note", "roman"].includes(part.type)),
+          startParts.filter(part => ["note", "roman"].includes(part.type)), closing);
+      }
+    }
+  }
+});
+
+test("a later detached semantic range does not remove an earlier ordinary range's line", () => {
+  for (const [opening, closing, detached] of [
+    ["<Centricity:F>", "</Centricity>", "<*/Centricity>"],
+    ["<pedal:V>", "</pedal>", "<*/pedal>"],
+    ["<Mode_Dorian:d>", "</Mode_Dorian>", "<*/Mode_Dorian>"],
+    ["<Scale_AlteredScale:C>", "</Scale_AlteredScale>", "<*/Scale_AlteredScale>"],
+  ]) {
+    const result = parseMstruct(`{BN:1}{TS:adlib}{D:1/4}${opening}X,X,${closing}X,${opening}X,X,${detached}X;`,
+      { semanticTagConfig, romanConfig });
+    assert.equal(result.ok, true, JSON.stringify(result.errors));
+    assert.deepEqual(result.tagRanges.map(range => range.visualMode), ["line", "detached"]);
+    assert.equal(result.measures[0].slots[1].tagOccupiedLanes.size, 1);
+    assert.equal(result.measures[0].slots[4].tagOccupiedLanes.size, 0);
+  }
+});
+
+test("default tag rows keep continuous lines fixed and reuse detached interior rows for later starts", () => {
+  const result = parseMstruct("{BN:1}{TS:adlib}{D:1/4}<Centricity:F><Scale_Phrygian:F>X;X;</Scale_Phrygian>X;<Constant_Structure>X;X;</Constant_Structure>X;<*/Centricity>X;",
+    { tagConfig: defaultTagConfig, semanticTagConfig, romanConfig });
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  const slots = result.measures.map(measure => measure.slots[0]);
+  const layers = { form: true, tags: true };
+  assert.deepEqual([...visibleTagLaneMap([slots[0]], layers)], [[0, 0], [1, 1]]);
+  assert.deepEqual([...visibleTagLaneMap([slots[1]], layers)], [[1, 1]], "the scale stays on its starting second row");
+  assert.deepEqual([...visibleTagLaneMap([slots[3]], layers)], [[0, 0]], "a later line starts on the vacant first row");
+  assert.deepEqual([...visibleTagLaneMap([slots[6]], layers)], [[0, 0]]);
+  const independent = parseMstruct("{BN:1}{TS:adlib}{D:1/4}<Centricity:F>X;<Constant_Structure>X;<*/Centricity>X;</Constant_Structure>X;",
+    { tagConfig: defaultTagConfig, semanticTagConfig, romanConfig });
+  assert.equal(independent.ok, true, JSON.stringify(independent.errors));
+  const endingTags = independent.measures[2].slots[0].tags;
+  assert.equal(endingTags[0].lane, 1, "a detached endpoint may move to another free row");
+  assert.deepEqual([...visibleTagLaneMap([slots[1]], { tags: true, form: false })], [[1, 0]], "hidden layers retain compact layout");
+});
+
+test("ordinary and one-shot semantic endings keep their existing display", () => {
+  const options = { tagConfig: defaultTagConfig, semanticTagConfig, romanConfig };
+  for (const [opening, closing, oneShot] of [
+    ["<Centricity:F>", "</Centricity>", "</Centricity:F>"],
+    ["<pedal:V>", "</pedal>", null],
+    ["<Mode_Dorian:d>", "</Mode_Dorian>", "</Mode_Dorian:d>"],
+    ["<Scale_AlteredScale:C>", "</Scale_AlteredScale>", "</Scale_AlteredScale:C>"],
+    ["<Seq:A2>", "</Seq>", null],
+    ["<SeqInv:A2>", "</SeqInv>", null],
+  ]) {
+    const result = parseMstruct(`{BN:1}{TS:adlib}{D:1/4}${opening}X,${closing}X${oneShot ? `,${oneShot}X` : ""};`, options);
+    assert.equal(result.ok, true, JSON.stringify(result.errors));
+    const tags = result.measures[0].slots.map(slot => slot.tags[0]);
+    assert.equal(tags[1].kind, "end");
+    for (const locale of ["zh", "en"]) for (const tag of tags) {
+      assert.equal(tagDisplayParts(tag, locale).map(part => part.value).join(""), tagDisplayName(tags[0], locale));
+    }
+  }
+});
+
+test("special DTC and FORM_END controls include their localized ending in display parts", () => {
+  const result = parseMstruct("{BN:1}{TS:adlib}{D:1/4}</DTC>X,</FORM_END>X,</FORM_END:Sonata_Form>X;", { formTagConfig: defaultFormTagConfig });
+  assert.equal(result.ok, true, JSON.stringify(result.errors));
+  for (const slot of result.measures[0].slots) for (const locale of ["zh", "en"]) {
+    const tag = slot.tags[0];
+    const text = tagDisplayParts(tag, locale).map(part => part.value).join("");
+    assert.equal(text, tagDisplayName(tag, locale));
+    assert.ok(text.endsWith(locale === "en" ? " End" : "结束"));
+  }
+});
 
 test("播放信息合并当前持续标签、one-shot 与活动注释", () => {
   const comments = [{ number: 1, texts: { zh_cn: "当前注释", en: "Current comment" } }];

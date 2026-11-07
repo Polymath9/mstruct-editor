@@ -3,11 +3,15 @@ import { tagDisplayName } from "../core/tag-config.js";
 import { tagDisplayParts } from "../core/semantic-tags.js";
 import { makeDurationLabel } from "./duration-label.js";
 import { scoreLength } from "../core/renderer-scale.js";
-import { tagIsVisible, visibleTagLanes } from "../core/renderer-layers.js";
+import { tagIsVisible, visibleTagLaneMap } from "../core/renderer-layers.js";
 import { clusterSymbolModel } from "../core/symbol-render-model.js";
 import { symbolModelDom } from "./symbol-dom.js";
 
 export function createScoreRenderer({ makeElement, appendChordNotation, appendRomanNotation, makeRomanSymbol, makeEventValue, makeBpmLabel, makeMetricModulationLabel, makeTimeSignature, getChordPreferences, getRendererLayers, getLocale, openCommentPopover, tr = defaultTr }) {
+  function isHorizontalStrip(chart) {
+    return ["scroll", "video"].includes(chart.closest?.(".renderer-panel")?.dataset.presentationMode);
+  }
+
   function makeTonalLabel(tonalCenter, relation = null) {
     const label = makeElement("span", "tonal-label");
     const key = makeElement("span", "tonal-label-key");
@@ -408,11 +412,11 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
       .some((slotLayout) => slotLayout.slot.events.some((event) => event.romanLayers?.length === 2)));
     const hasRomanRows = measureItems.some((item) => (item.segment?.slots ?? item.engraving.slots)
       .some((slotLayout) => slotLayout.slot.events.some((event) => event.roman || event.romanLayers?.length)));
-    const occupiedTagLanes = system.items.flatMap((item) => item.kind === "measure"
-      ? (item.segment?.slots ?? item.engraving.slots).flatMap((slotLayout) => [...visibleTagLanes(slotLayout.slot, layers)])
-      : [...visibleTagLanes(item.marker ?? {}, layers)]);
-    const tagLaneMap = new Map([...new Set(occupiedTagLanes)].sort((a, b) => a - b).map((lane, row) => [lane, row]));
-    const tagLaneCount = tagLaneMap.size;
+    const tagSources = system.items.flatMap((item) => item.kind === "measure"
+      ? (item.segment?.slots ?? item.engraving.slots).map((slotLayout) => slotLayout.slot)
+      : [item.marker ?? {}]);
+    const tagLaneMap = visibleTagLaneMap(tagSources, layers);
+    const tagLaneCount = Math.max(0, ...[...tagLaneMap.values()].map(row => row + 1));
     const isSingleEventSystem = system.items.length === 1
       && measureItems.length === 1
       && measureItems[0].segment.startsMeasure
@@ -423,6 +427,7 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
       `score-system ${system.justified ? "is-justified" : "is-ragged"}${hasSpeedAnnotations ? " has-top-annotations" : ""}${hasStackedTempoBpm ? " has-stacked-tempo-bpm" : ""}${maxSpeedRows > 2 ? " has-multi-speed-rows" : ""}${hasFormSymbols ? " has-form-symbols" : ""}${hasComments ? " has-comments" : ""}${isSingleEventSystem ? " is-single-event-system" : ""}${hasModulationRows ? " has-modulation-rows" : ""}${tagLaneCount ? " has-tags" : ""}`,
     );
     if (maxSpeedRows > 2) element.style.setProperty("--speed-track-size", `${2.125 + (maxSpeedRows - 1) * 1.18}em`);
+    if (system.independentMeasure) element.style.setProperty("--presentation-system-width", scoreLength(system.naturalWidth));
     element.setAttribute("aria-label", tr("scoreSystem"));
     element.style.setProperty("--tag-lane-count", String(tagLaneCount));
     element.style.setProperty("--tag-content-extra", `${tagLaneCount ? .35 + tagLaneCount * 1.75 : 0}em`);
@@ -479,6 +484,7 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
     if (!pairs.length) return;
     const chartRect = chart.getBoundingClientRect();
     const systems = [...chart.querySelectorAll(".score-system")];
+    const continuousStrip = isHorizontalStrip(chart);
     const layer = makeElement("div", "ending-bracket-layer");
     const numberShifts = new Map();
     for (const pair of pairs) {
@@ -497,8 +503,9 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
         const firstBar = system.querySelector(".start-barline, .measure-barline, .control-boundary");
         const musicTop = firstBar?.getBoundingClientRect().top ?? systemRect.top + 50;
         const fontSize = Number.parseFloat(getComputedStyle(system).fontSize) || 16;
-        const left = index === startIndex ? startRect.left : systemRect.left + fontSize * .12;
-        const right = index === endIndex ? endRect.left : systemRect.right - fontSize * .12;
+        const edgeGap = continuousStrip ? 0 : fontSize * .12;
+        const left = index === startIndex ? startRect.left : systemRect.left + edgeGap;
+        const right = index === endIndex ? endRect.left : systemRect.right - edgeGap;
         if (right - left < 3) continue;
         for (const number of system.querySelectorAll(".bar-number")) {
           const barline = number.closest(".measure-barline");
@@ -580,6 +587,7 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
     const eventGap = scoreFontSize * .7;
     const barlineGap = scoreFontSize * .6;
     const systemEdgeGap = scoreFontSize * .85;
+    const continuousStrip = isHorizontalStrip(chart);
 
     for (const source of sources) {
       const link = source.dataset.romanChainLink;
@@ -622,8 +630,8 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
         const targetRowRect = targetRows[rowIndex]?.getBoundingClientRect();
         const right = link === "break" ? targetRect.left : (link === "continue" && targetRowRect ? targetRowRect.left - eventGap : targetRect.left - eventGap);
         const lineRight = link === "break" ? right - scoreFontSize * .3 : right;
-        if (sourceSystem === targetSystem) {
-          appendVoiceLeadingRange(layer, chartRect, sourceSystem, left, lineRight, top, barlineGap);
+        if (sourceSystem === targetSystem || continuousStrip) {
+          appendVoiceLeadingRange(layer, chartRect, continuousStrip ? chart : sourceSystem, left, lineRight, top, barlineGap);
         } else {
           appendVoiceLeadingRange(layer, chartRect, sourceSystem, left, sourceSystemRect.right - systemEdgeGap, top, barlineGap);
           if (target) {
@@ -737,7 +745,7 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
       const sourceTop = sourceRect.top + fontSize * .05;
       const targetTop = targetRect.top + fontSize * .05;
       let labelPoint;
-      if (sourceSystem === targetSystem) {
+      if (sourceSystem === targetSystem || isHorizontalStrip(chart)) {
         labelPoint = appendNewRiemannianArc(
           layer,
           chartRect,
@@ -819,7 +827,7 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
     const chartRect = chart.getBoundingClientRect();
     const systems = [...chart.querySelectorAll(".score-system")];
     const fontSize = Number.parseFloat(getComputedStyle(chart).fontSize) || 16;
-    const edgeGap = fontSize * .4;
+    const edgeGap = isHorizontalStrip(chart) ? 0 : fontSize * .4;
 
     for (const source of sources) {
       const rangeId = source.dataset.tagRangeId;
@@ -881,7 +889,7 @@ export function createScoreRenderer({ makeElement, appendChordNotation, appendRo
     const chartRect = chart.getBoundingClientRect();
     const systems = [...chart.querySelectorAll(".score-system")];
     const fontSize = Number.parseFloat(getComputedStyle(chart).fontSize) || 16;
-    const edgeGap = fontSize * .4;
+    const edgeGap = isHorizontalStrip(chart) ? 0 : fontSize * .4;
     for (const source of sources) {
       const rangeId = source.dataset.commentRangeId;
       const number = Number(source.dataset.commentNumber);

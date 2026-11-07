@@ -273,6 +273,8 @@ export function resolveSemanticTagToken(content, { semanticTagConfig, romanConfi
         zhParts: romanLabelParts("持续音：", roman, result),
         enParts: romanLabelParts("Pedal Note: ", roman, result),
         semanticKind: "pedal",
+        closingToken: "</pedal>",
+        detachedClosingToken: "<*/pedal>",
       }),
     };
   }
@@ -293,6 +295,8 @@ export function resolveSemanticTagToken(content, { semanticTagConfig, romanConfi
         enParts: templateParts("Centricity: {note}", "note", note),
         semanticKind: "centricity",
         tonalCenter: note,
+        closingToken: "</Centricity>",
+        detachedClosingToken: "<*/Centricity>",
       }),
     };
   }
@@ -319,6 +323,8 @@ export function resolveSemanticTagToken(content, { semanticTagConfig, romanConfi
         zhParts: templateParts(zhTemplate, "note", note),
         enParts: templateParts(enTemplate, "note", note),
         semanticKind: isMode ? "mode" : "scale",
+        closingToken: `</${variant}_${base}>`,
+        detachedClosingToken: `<*/${variant}_${base}>`,
       }),
     };
   }

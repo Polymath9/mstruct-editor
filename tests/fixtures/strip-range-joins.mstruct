@@ -1,0 +1,36 @@
+METADATA:
+{MSTRUCT_FORMAT_VERSION}1
+{MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
+{MSTRUCT_PROFILE_HASH}sha256:751637279628bf6816ddb1892455066b5006801d274ed4abc2957c798f8c9cc2
+{SONG_NAME}横向连接接缝 / Horizontal Range Joins
+{VERSION_NAME}Renderer Test
+{IS_STABLE_TEMPO}True
+{OFFSET}0
+END_METADATA
+
+MAIN:
+{BN:1}{TS:adlib}{D:1/4}{BPM:1/4=120}{TC:C}
+[COMMENT:1]<Constant_Structure>[F:Intro||]C|I;
+[F:A||]C|I;
+C|I;
+[/COMMENT]</Constant_Structure>C|I;
+C|I;
+[NR:P]Cm|i;
+C|I[5,3-];
+C|[6,3-];
+C|[5,3];
+{||:}C|I;
+{ENDING:1}F|IV;
+G|V{/ENDING:1}{:||};
+{ENDING:2}C|I;
+C|I{/ENDING};
+END_MAIN
+
+COMMENT:
+[COMMENT:1<zh_cn>]
+滚动全屏和视频模式的持续线应跨小节连续连接。
+[/COMMENT:1<zh_cn>]
+[COMMENT:1<en>]
+Range lines remain continuous across measures in scrolling fullscreen and video modes.
+[/COMMENT:1<en>]
+END_COMMENT

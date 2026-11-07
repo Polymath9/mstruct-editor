@@ -1,0 +1,26 @@
+METADATA:
+{MSTRUCT_FORMAT_VERSION}1
+{MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
+{MSTRUCT_PROFILE_HASH}sha256:751637279628bf6816ddb1892455066b5006801d274ed4abc2957c798f8c9cc2
+{SONG_NAME}分离标签与曲式下落 / Detached Tags and Form Placement
+{VERSION_NAME}Renderer Test
+{IS_STABLE_TEMPO}True
+{OFFSET}0
+END_METADATA
+
+MAIN:
+{BN:1}{TS:7/4}{D:7/4}{BPM:1/4=220.5}{TC:f}
+<Centricity:F><Scale_Phrygian:F>[F:Intro||]Fm7|i7{:||6x>>};
+{||:}[F:A||]F1|i{:||7x>>};F1|i;
+F7add11no3|i</Scale_Phrygian>;
+[F:Transition||1]F7add11no3|i7;
+<Constant_Structure>Eb7add11no3|bvii7;
+Gb7add11no3|bii7;
+E7add11no3|nvii7</Constant_Structure>;
+[F:Transition||2]<*/Centricity>N.C.;
+{LB}
+{TS:adlib}{D:1/4}{TC:C}
+[F:Checks||]<pedal:V><Mode_Dorian:d><Scale_AlteredScale:C><Seq:A2><SeqInv:D1>C|I;
+D|ii;
+<*/pedal><*/Mode_Dorian><*/Scale_AlteredScale><*/Seq><*/SeqInv>C|I;
+END_MAIN

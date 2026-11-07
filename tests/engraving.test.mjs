@@ -18,6 +18,39 @@ const [chordCsv, basicCsv, advancedCsv, figuredBassCsv, specialCsv] = await Prom
 const specialChords = parseSpecialChordCsv(chordCsv);
 const romanConfig = parseRomanConfigCsv({ basicCsv, advancedCsv, figuredBassCsv, specialCsv });
 
+test("horizontal presentations lay out each full measure independently at its natural width", () => {
+  const parsed = parseMstruct('{BN:1}{TS:adlib}{D:1/4}{TC:C}{BPM:1/4=120}[F:Intro||]C|I;[F:A||]D|ii;[F:Transition||1]G|V;', { specialChords, romanConfig });
+  assert.equal(parsed.ok, true, JSON.stringify(parsed.errors));
+  assert.equal(layoutSystems(parsed.flow, 5000).length, 1, "ordinary score layout still groups measures");
+  const systems = layoutSystems(parsed.flow, 5000, { independentMeasures: true });
+  assert.equal(systems.length, 3);
+  for (const [index, system] of systems.entries()) {
+    assert.equal(system.items.length, 1);
+    assert.equal(system.items[0].measure, parsed.measures[index]);
+    assert.equal(system.items[0].segment.startsMeasure, true);
+    assert.equal(system.items[0].segment.endsMeasure, true);
+    assert.equal(system.independentMeasure, true);
+    assert.equal(system.justified, false, "short measures are not stretched to a viewport-wide system");
+  }
+  assert.ok(systems[0].items[0].segment.slots[0].slot.annotations.bpm);
+  assert.equal(Boolean(systems[1].items[0].segment.slots[0].slot.annotations.bpm), false, "A never inherits Intro's speed track");
+});
+
+test("presentation measures do not wrap or change annotation groups at viewport boundaries", () => {
+  const notes = Array.from({ length: 32 }, () => "C|I").join(",");
+  const parsed = parseMstruct(`{BN:1}{TS:adlib}{D:1/32}{TC:C}[F:A||]${notes};{LB}...{BN:10}[F:Transition||1]${notes};`, { specialChords, romanConfig });
+  assert.equal(parsed.ok, true, JSON.stringify(parsed.errors));
+  const layouts = [360, 900, 1920].map(width => layoutSystems(parsed.flow, width, { independentMeasures: true }));
+  for (const systems of layouts) {
+    assert.deepEqual(systems.map(system => system.items.map(item => item.kind)), [["measure"], ["ellipsis"], ["measure"]]);
+    for (const system of systems.filter(system => system.items[0].kind === "measure")) {
+      assert.equal(system.items[0].segment.slots.length, 32);
+      assert.equal(system.items[0].segment.endsMeasure, true);
+    }
+  }
+  assert.deepEqual(layouts.map(systems => systems.map(system => system.naturalWidth)), Array(3).fill(layouts[0].map(system => system.naturalWidth)));
+});
+
 test("quality display aliases contribute their displayed width without altering default spacing or source", () => {
   const result = parseMstruct('{BN:1}{TS:adlib}{D:1/32}CmM7|;', { specialChords, romanConfig });
   assert.equal(result.ok, true);

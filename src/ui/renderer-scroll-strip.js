@@ -56,6 +56,12 @@ export function presentationScrollGeometry({ items, offset, viewportWidth, viewp
   return { leading, height: Math.min(leading + trailing + STRIP_EDGE_SPACE, viewportHeight - 80) };
 }
 
+/** Keep video's lower music rows steady without holding departed upper annotations. */
+export function presentationVideoGeometry(visible, lowerRows, viewportHeight) {
+  return { leading: visible.leading,
+    height: Math.min(viewportHeight - 80, Math.max(visible.height, visible.leading + lowerRows.height)) };
+}
+
 /** Merge nearby tall passages on the musical clock, including repeats and seeks. */
 export function presentationHeightRanges(visits, baseline, viewportHeight) {
   const ranges = [];
@@ -108,16 +114,18 @@ export function createRendererScrollStrip({ panel, canvas, onGeometryChange, get
   canvas.append(focus);
   let enabled = false, chart = null, slots = new Map(), systems = [], contentItems = [];
   let latest = null, refreshFrame = null;
-  let maximumLeading = 0, maximumTrailing = 0, alignedLeading = null;
+  let maximumTrailing = 0, alignedLeading = null;
   let route = null, heightRanges = [], baseline = null;
 
   function measureRoute() {
     route = getPlaybackEntries();
-    const geometry = { viewportHeight: panel.clientHeight, maximumLeading, maximumTrailing };
+    // Video keeps the lower music rows steady; upper annotations follow the viewport.
+    const geometry = { viewportHeight: panel.clientHeight, maximumLeading: 0, maximumTrailing };
     baseline = presentationStripGeometry(geometry);
     const visits = route.flatMap(entry => {
       const system = slots.get(String(entry.slotId))?.system;
-      return system ? [{ startMs: entry.startMs, endMs: entry.endMs, trailing: system.trailing, ...presentationStripGeometry({ ...geometry, current: system }) }] : [];
+      return system ? [{ startMs: entry.startMs, endMs: entry.endMs, trailing: system.trailing,
+        ...presentationStripGeometry({ ...geometry, current: { leading: 0, trailing: system.trailing } }) }] : [];
     });
     heightRanges = presentationHeightRanges(visits, baseline, panel.clientHeight);
   }
@@ -142,7 +150,6 @@ export function createRendererScrollStrip({ panel, canvas, onGeometryChange, get
       const height = content.bottom - content.top;
       return { element, anchor: harmony ?? element, height, leading, trailing: height - leading, trimTop: content.top - rect.top };
     });
-    maximumLeading = Math.max(0, ...systems.map(system => system.leading));
     maximumTrailing = Math.max(0, ...systems.map(system => system.trailing));
     contentItems = measureScrollContent(chart, systems);
     for (const system of systems) {
@@ -173,9 +180,10 @@ export function createRendererScrollStrip({ panel, canvas, onGeometryChange, get
     const left = current ? previous.left + (current.left - previous.left) * eased : 0;
     const anchor = Math.min(180, canvas.clientWidth * .14);
     const passage = entry && heightRanges.find(range => range.start <= state.elapsedMs && state.elapsedMs < range.end);
-    const { leading, height } = panel.dataset.presentationMode === "scroll"
-      ? presentationScrollGeometry({ items: contentItems, offset: anchor - left, viewportWidth: canvas.clientWidth, viewportHeight: panel.clientHeight })
-      : passage || baseline;
+    const geometry = presentationScrollGeometry({ items: contentItems, offset: anchor - 24 - left,
+      viewportWidth: canvas.clientWidth, viewportHeight: panel.clientHeight });
+    const { leading, height } = panel.dataset.presentationMode === "scroll" ? geometry
+      : presentationVideoGeometry(geometry, passage || baseline, panel.clientHeight);
     panel.style.setProperty("--presentation-strip-height", `${height}px`);
     if (alignedLeading !== leading) {
       for (const system of systems) system.element.style.transform = `translateY(${leading - system.leading - system.trimTop}px)`;
