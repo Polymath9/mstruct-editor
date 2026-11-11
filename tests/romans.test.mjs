@@ -81,6 +81,31 @@ test("Renderer Test covers validation warnings, equivalent figures and a wide ke
   assert.ok(result.warnings.some(warning => warning.code === "roman-seventh-figure-unexpected"));
 });
 
+test("augmented-sixth families accept enharmonic sevenths and still validate the bass", async () => {
+  const check = (body, center) => {
+    const result = parseMstruct(`{BN:1}{TS:adlib}{D:1/4}{TC:${center}}${body};`, { specialChords, romanConfig: config });
+    assert.equal(result.ok, true, JSON.stringify(result.errors));
+    return result.warnings.filter(warning => warning.romanValidation);
+  };
+  for (const center of ["D", "d"]) {
+    for (const body of ["Bb7|Ger+6", "Bb7/G#|Gero3", "Bb7b5|Fr+6", "Bb7no5|It+6",
+      "Bb7/G#|Gero3\\\\Gero3"]) {
+      assert.deepEqual(check(body, center), [], `${center}: ${body}`);
+    }
+    for (const body of ["Bb7/G#|Ger+6", "Bb7|Gero3", "Bb7/A|Fr+6", "Bb7/A|It+6"]) {
+      assert.deepEqual(check(body, center).map(warning => warning.romanCode), ["bass-mismatch"], body);
+    }
+  }
+  assert.deepEqual(check("Ab7|Ger+6", "C"), []);
+  assert.deepEqual(check("Eb7|Ger+6/V", "C"), []);
+  assert.deepEqual(check("Bb7/G#|Gero3\\\\bVI7", "D").map(warning => warning.romanCode), ["bass-mismatch"]);
+  assert.deepEqual(check("Bb7|bVI", "D").map(warning => warning.romanCode), ["seventh-figure-missing"]);
+  const document = parseMstructDocument(await readFile(new URL("fixtures/roman-figure-alignment.mstruct", import.meta.url), "utf8"));
+  const fixture = parseMstruct(document.main, { specialChords, romanConfig: config });
+  assert.equal(fixture.ok, true, JSON.stringify(fixture.errors));
+  assert.deepEqual(fixture.warnings.filter(warning => warning.romanValidation), []);
+});
+
 test("parses the documented Roman structures and applied chords", () => {
   const cases = [
     ["biii64", ["b7", "b3", "b5"]],

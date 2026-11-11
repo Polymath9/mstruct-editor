@@ -60,7 +60,12 @@ export function romanSymbolModel(result) {
     if (result.superscriptText && visibleFigures.length === 2 && !hasSusFigure) classes.push("has-stacked-quality-figure");
     children.push(figureStackModel(visibleFigures));
   }
-  if (result.generalFigure) children.push(figureStackModel(result.generalFigure.figures.map((figure) => figure.text), true));
+  if (result.generalFigure) {
+    const rows = result.generalFigure.figures.map((figure) => figure.text);
+    if (rows.length === 3) classes.push("has-three-figure-rows");
+    if (rows.length === 4) classes.push("has-four-figure-rows");
+    children.push(figureStackModel(rows, true));
+  }
   for (const applied of result.applied) {
     children.push(element("span", "score-roman-slash", ["/"]));
     children.push(element("span", "score-roman-applied", notationModel(applied.roman, true)));

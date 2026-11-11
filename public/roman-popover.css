@@ -1,4 +1,10 @@
 .score-roman-symbol {
+  /* Lengths resolve at the shared .63em figure/superscript font size. */
+  --roman-figure-row-size: .82em;
+  --roman-figure-accidental-extra: calc(var(--roman-figure-row-size) * .25);
+  --roman-row-one-extra: 0em;
+  --roman-row-two-extra: 0em;
+  --roman-row-three-extra: 0em;
   display: inline-flex;
   min-block-size: 1.2em;
   align-items: center;
@@ -41,6 +47,9 @@
   font-weight: inherit;
   line-height: .82;
   vertical-align: middle;
+  /* Anchor the first number at the upper row of an ordinary two-row stack.
+     Oversized accidentals keep their natural line boxes and local offsets. */
+  transform: translateY(calc(50% - var(--roman-figure-row-size) - var(--roman-row-one-extra) / 2));
 }
 .score-roman-figure-row {
   /* Keep each accidental and number in one natural-width run. Right-align
@@ -51,11 +60,10 @@
   gap: 0;
   text-align: center;
 }
-.score-roman-figures.has-sus {
-  align-self: flex-start;
-  font-size: .62em;
-  line-height: 1;
-  transform: translateY(-.18em);
+.score-roman-figure-number {
+  /* Academico Bold uses proportional digits. Keep a shared single-digit axis
+     without reserving a separate, empty accidental column. */
+  min-inline-size: 1ch;
 }
 .score-roman-figures.has-sus .score-roman-figure-row {
   justify-self: center;
@@ -66,14 +74,30 @@
   line-height: .82;
   transform: translateY(-.25em);
 }
-.score-roman-figures.is-single:not(.has-sus) { align-self: flex-start; transform: translateY(.18em); }
-.score-roman-symbol.has-single-quality-figure > .score-roman-sup { transform: translateY(.18em); }
-.score-roman-symbol.has-stacked-quality-figure > .score-roman-sup {
-  /* Match the first row of the centered two-row figure stack. */
+.score-roman-symbol > .score-roman-sup {
+  /* Scope the common upper row to Roman; chords also reuse score-roman-sup. */
   align-self: center;
   font-size: .63em;
   line-height: .82;
   transform: translateY(-50%);
+}
+.score-roman-symbol:has(> .score-roman-figures > .score-roman-figure-row:nth-child(1) > .score-roman-figure-accidental) {
+  --roman-row-one-extra: var(--roman-figure-accidental-extra);
+}
+.score-roman-symbol:has(> .score-roman-figures > .score-roman-figure-row:nth-child(2) > .score-roman-figure-accidental) {
+  --roman-row-two-extra: var(--roman-figure-accidental-extra);
+}
+.score-roman-symbol:has(> .score-roman-figures > .score-roman-figure-row:nth-child(3) > .score-roman-figure-accidental) {
+  --roman-row-three-extra: var(--roman-figure-accidental-extra);
+}
+.score-roman-symbol.has-four-figure-rows > .score-roman-figures {
+  /* A four-row stack uses its second number as the common upper row. */
+  transform: translateY(calc(50% - 2 * var(--roman-figure-row-size) - var(--roman-row-one-extra) - var(--roman-row-two-extra) / 2));
+}
+.score-roman-symbol.has-three-figure-rows > .score-roman-figures { transform: none; }
+.score-roman-symbol.has-three-figure-rows > .score-roman-sup {
+  /* Three rows retain their centered stack; quality follows its first number. */
+  transform: translateY(calc(0em - var(--roman-figure-row-size) - (var(--roman-row-two-extra) + var(--roman-row-three-extra)) / 2));
 }
 .score-roman-accidental { flex: 0 0 auto; }
 .score-roman-slash { margin-inline: .1em; }

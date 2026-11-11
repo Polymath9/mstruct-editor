@@ -4,6 +4,7 @@ import { tonalReferencePitchClass } from "./tonal-reference.js";
 const DEGREE_PITCHES = [0, 2, 4, 5, 7, 9, 11];
 const ALTERATIONS = { "": 0, b: -1, bb: -2, "#": 1, x: 2 };
 const NOTE_NAMES = ["C", "C#/Db", "D", "D#/Eb", "E", "F", "F#/Gb", "G", "G#/Ab", "A", "A#/Bb", "B"];
+const AUGMENTED_SIXTH_MODES = new Set(["aug6", "aug6dim3"]);
 const pitchClass = value => (value % 12 + 12) % 12;
 
 /** Standard figures and their general-figure equivalents, before any applied suffix. */
@@ -32,7 +33,10 @@ export function collectRomanValidationWarnings(measures, source) {
         if (!result) continue;
         const start = layer[`${field}Start`] ?? layer.start;
         const end = layer[`${field}End`] ?? start + result.source.length;
-        if (!structure.isPolychord && structure.hasSeventh !== romanHasSeventhFigure(result)) {
+        // Augmented-sixth symbols define their own harmony: an enharmonic
+        // seventh in the chord spelling does not require ordinary 7/65/43/42.
+        if (!structure.isPolychord && !AUGMENTED_SIXTH_MODES.has(result.noteNameSpecial)
+          && structure.hasSeventh !== romanHasSeventhFigure(result)) {
           const romanCode = structure.hasSeventh ? "seventh-figure-missing" : "seventh-figure-unexpected";
           makeError(warnings, source, `roman-${romanCode}`, start, end, {
             severity: "warning", domain: "roman", romanCode, romanValidation: true,

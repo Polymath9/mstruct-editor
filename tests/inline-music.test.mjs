@@ -69,6 +69,7 @@ test("score and inline models use identical chord segments and Roman figures", (
   assert.equal(roman.ok, true);
   assert.deepEqual(roman.model.children[0], romanSymbolModel(parseRomanSymbol(source, { config: options.romanConfig })));
   assert.equal(find(roman.model, "score-roman-figure-row").length, 4);
+  assert.equal(find(roman.model, "has-four-figure-rows").length, 1);
   assert.equal(find(roman.model, "score-roman-figure-accidental").length, 1);
 });
 

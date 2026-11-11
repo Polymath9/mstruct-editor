@@ -996,10 +996,8 @@ test("罗马数字使用独立的上下标、详情弹层与跨小节 voice-lead
   assert.match(romanPopoverStylesheet, /\.score-roman-symbol\s*\{[^}]*align-items:\s*center/s);
   assert.match(romanPopoverStylesheet, /\.score-roman-figure-row\s*\{[^}]*display:\s*inline-flex;[^}]*gap:\s*0/s);
   assert.doesNotMatch(romanPopoverStylesheet, /grid-template-columns/);
-  assert.match(romanPopoverStylesheet, /\.score-roman-figures\.has-sus\s*\{[^}]*align-self:\s*flex-start;[^}]*font-size:\s*\.62em;[^}]*line-height:\s*1;[^}]*translateY\(-\.18em\)/s);
   assert.match(romanPopoverStylesheet, /\.score-roman-figures\.has-sus \.score-roman-figure-row\s*\{[^}]*justify-self:\s*center/s);
   assert.match(romanPopoverStylesheet, /\.score-roman-figures \+ \.score-roman-slash\s*\{[^}]*margin-inline-start:\s*-\.05em/s);
-  assert.match(romanPopoverStylesheet, /\.score-roman-symbol\.has-single-quality-figure > \.score-roman-sup\s*\{[^}]*translateY\(\.18em\)/s);
   assert.match(romanPopoverStylesheet, /\.score-roman-figure-accidental\s*\{[^}]*align-self:\s*end;[^}]*font-size:\s*1\.25em;[^}]*line-height:\s*\.82;[^}]*transform:\s*translateY\(-\.25em\)/s);
   assert.match(romanPopoverStylesheet, /\.roman-trigger\s*\{[^}]*display:\s*inline-flex/s);
   assert.match(rendererSource, /score-chord-accidental score-roman-accidental score-roman-figure-accidental/);

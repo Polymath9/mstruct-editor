@@ -1,0 +1,19 @@
+METADATA:
+{MSTRUCT_FORMAT_VERSION}1
+{MSTRUCT_PROFILE_ID}org.mstruct.official/rulesets/1.0.0
+{MSTRUCT_PROFILE_HASH}sha256:751637279628bf6816ddb1892455066b5006801d274ed4abc2957c798f8c9cc2
+{SONG_NAME}Roman 数字对齐与增六校验 / Roman Figure Alignment and Augmented Sixths
+{VERSION_NAME}Renderer Test
+{IS_STABLE_TEMPO}False
+END_METADATA
+
+MAIN:
+{BN:1}{TS:adlib}{D:1/4}{TC:D}D7/F#|V65/IV,Bb7|Ger+6,Bb7/G#|Gero3,Bb7b5|Fr+6,Bb7no5|It+6;
+|V65,|V43,|V42,|V[10,b9,x6,bb3-x]/V;
+|V7,|V6,|V64,|viio,|viio7,|viio65;
+|viioM7,|viiho7,|viiho65,|V+7,|VDM7,|ioM7;
+|Ger+6,|Fr+6,|It+6,|ct+6,|VSBlk,|Gero3;
+|Vsus,|V7sus,|V7b5sus,|VDM7b5sus,|V7b5;
+|V[7,5,3-x],|VS[7,b5,3-x];
+|V[10,9,6,3-x],|V[b10,9,6,3-x],|V[10,b9,6,3-x],|VS[9,#7,5,3-x];
+END_MAIN
